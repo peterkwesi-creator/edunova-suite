@@ -7,34 +7,16 @@ export default function LoginPage() {
   const router = useRouter();
 
   const [portal, setPortal] = useState("TEACHER");
-  const [email, setEmail] = useState("teacher@edunova.com");
-  const [password, setPassword] = useState("teacher123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   function changePortal(value: string) {
     setPortal(value);
+    setEmail("");
+    setPassword("");
     setError("");
-
-    if (value === "ADMIN") {
-      setEmail("admin@edunova.com");
-      setPassword("admin123");
-    }
-
-    if (value === "TEACHER") {
-      setEmail("teacher@edunova.com");
-      setPassword("teacher123");
-    }
-
-    if (value === "STUDENT") {
-      setEmail("student@edunova.com");
-      setPassword("student123");
-    }
-
-    if (value === "PARENT") {
-      setEmail("parent@edunova.com");
-      setPassword("parent123");
-    }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -87,7 +69,7 @@ export default function LoginPage() {
     } catch (error) {
       console.error(error);
       setError(
-        "Unable to connect to the login server. Make sure the development server is running."
+        "Unable to connect to the login server. Please try again."
       );
     } finally {
       setLoading(false);
@@ -147,6 +129,8 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
+                placeholder="Enter your email"
+                autoComplete="email"
                 required
                 className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               />
@@ -165,6 +149,8 @@ export default function LoginPage() {
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
+                placeholder="Enter your password"
+                autoComplete="current-password"
                 required
                 className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               />
@@ -184,28 +170,6 @@ export default function LoginPage() {
               {loading ? "Signing in..." : "Sign In"}
             </button>
           </form>
-
-          <div className="mt-6 rounded-xl bg-slate-50 p-4">
-            <p className="text-xs font-semibold text-slate-600">
-              Demo accounts
-            </p>
-
-            <p className="mt-2 text-xs text-slate-500">
-              Admin: admin@edunova.com / admin123
-            </p>
-
-            <p className="mt-1 text-xs text-slate-500">
-              Teacher: teacher@edunova.com / teacher123
-            </p>
-
-            <p className="mt-1 text-xs text-slate-500">
-              Student: student@edunova.com / student123
-            </p>
-
-            <p className="mt-1 text-xs text-slate-500">
-              Parent: parent@edunova.com / parent123
-            </p>
-          </div>
         </div>
       </div>
     </main>
