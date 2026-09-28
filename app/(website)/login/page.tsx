@@ -124,10 +124,8 @@ export default function LoginPage() {
               <select
                 id="portal"
                 value={portal}
-                onChange={(event) =>
-                  changePortal(event.target.value)
-                }
-                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 outline-none focus:border-blue-500"
+                onChange={(event) => changePortal(event.target.value)}
+                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               >
                 <option value="ADMIN">Admin</option>
                 <option value="TEACHER">Teacher</option>
@@ -148,11 +146,9 @@ export default function LoginPage() {
                 id="email"
                 type="email"
                 value={email}
-                onChange={(event) =>
-                  setEmail(event.target.value)
-                }
+                onChange={(event) => setEmail(event.target.value)}
                 required
-                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-blue-500"
+                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               />
             </div>
 
@@ -168,11 +164,9 @@ export default function LoginPage() {
                 id="password"
                 type="password"
                 value={password}
-                onChange={(event) =>
-                  setPassword(event.target.value)
-                }
+                onChange={(event) => setPassword(event.target.value)}
                 required
-                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-blue-500"
+                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               />
             </div>
 
