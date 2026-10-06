@@ -82,11 +82,21 @@ const sections = [
         href: "/admin/fees",
         icon: "💳",
       },
+      {
+        name: "Accounting",
+        href: "/admin/accounting",
+        icon: "💰",
+      },
     ],
   },
   {
     title: "Administration",
     items: [
+      {
+        name: "Tasks",
+        href: "/admin/tasks",
+        icon: "✅",
+      },
       {
         name: "Users",
         href: "/admin/users",
@@ -115,12 +125,12 @@ const sections = [
       {
         name: "Contact Messages",
         href: "/admin/contact-messages",
-        icon: "✉",
+        icon: "✉️",
       },
       {
         name: "Settings",
         href: "/admin/settings",
-        icon: "⚙",
+        icon: "⚙️",
       },
     ],
   },
@@ -130,47 +140,44 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden min-h-screen w-72 shrink-0 border-r border-gray-200 bg-white lg:block">
-      <div className="sticky top-0 flex h-screen flex-col">
-        <div className="border-b border-gray-200 px-6 py-6">
-          <Link
-            href="/admin/dashboard"
-            className="text-2xl font-black tracking-tight text-blue-600"
-          >
-            EduNova
-          </Link>
+    <aside className="flex h-full w-full flex-col bg-slate-950 text-white">
+      <div className="border-b border-slate-800 px-6 py-6">
+        <Link href="/admin/dashboard" className="block">
+          <div className="text-xl font-bold tracking-tight">
+            EduNova Suite
+          </div>
 
-          <p className="mt-1 text-xs font-medium text-gray-500">
+          <div className="mt-1 text-xs font-medium text-slate-400">
             Administrator Portal
-          </p>
-        </div>
+          </div>
+        </Link>
+      </div>
 
-        <nav className="flex-1 space-y-7 overflow-y-auto px-4 py-6">
+      <nav className="flex-1 overflow-y-auto px-3 py-5">
+        <div className="space-y-7">
           {sections.map((section) => (
             <div key={section.title}>
-              <p className="mb-2 px-3 text-[11px] font-bold uppercase tracking-wider text-gray-400">
+              <div className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
                 {section.title}
-              </p>
+              </div>
 
               <div className="space-y-1">
                 {section.items.map((item) => {
-                  const active =
+                  const isActive =
                     pathname === item.href ||
-                    pathname.startsWith(
-                      `${item.href}/`
-                    );
+                    pathname.startsWith(`${item.href}/`);
 
                   return (
                     <Link
                       key={item.href}
                       href={item.href}
-                      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
-                        active
-                          ? "bg-blue-50 text-blue-700"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
+                        isActive
+                          ? "bg-blue-600 text-white"
+                          : "text-slate-300 hover:bg-slate-900 hover:text-white"
                       }`}
                     >
-                      <span className="flex w-6 justify-center text-base">
+                      <span className="flex w-6 shrink-0 items-center justify-center text-base">
                         {item.icon}
                       </span>
 
@@ -181,7 +188,17 @@ export default function Sidebar() {
               </div>
             </div>
           ))}
-        </nav>
+        </div>
+      </nav>
+
+      <div className="border-t border-slate-800 px-6 py-4">
+        <div className="text-xs text-slate-500">
+          EduNova Suite
+        </div>
+
+        <div className="mt-1 text-xs text-slate-600">
+          School Management Platform
+        </div>
       </div>
     </aside>
   );
