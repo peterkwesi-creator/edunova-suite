@@ -12,6 +12,11 @@ const sections = [
         href: "/admin/dashboard",
         icon: "⌂",
       },
+      {
+        name: "Tasks",
+        href: "/admin/tasks",
+        icon: "✓",
+      },
     ],
   },
   {
@@ -72,6 +77,11 @@ const sections = [
         href: "/admin/report-card",
         icon: "📊",
       },
+      {
+        name: "GES Report",
+        href: "/admin/ges-report",
+        icon: "📑",
+      },
     ],
   },
   {
@@ -93,11 +103,6 @@ const sections = [
     title: "Administration",
     items: [
       {
-        name: "Tasks",
-        href: "/admin/tasks",
-        icon: "✅",
-      },
-      {
         name: "Users",
         href: "/admin/users",
         icon: "👥",
@@ -106,11 +111,6 @@ const sections = [
         name: "Schools",
         href: "/admin/schools",
         icon: "🏢",
-      },
-      {
-        name: "GES Report",
-        href: "/admin/ges-report",
-        icon: "📑",
       },
       {
         name: "Website Editor",
@@ -140,24 +140,24 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex h-full w-full flex-col bg-slate-950 text-white">
-      <div className="border-b border-slate-800 px-6 py-6">
+    <aside className="flex h-full w-72 flex-col border-r border-slate-200 bg-white">
+      <div className="border-b border-slate-200 px-6 py-5">
         <Link href="/admin/dashboard" className="block">
-          <div className="text-xl font-bold tracking-tight">
+          <div className="text-lg font-bold text-slate-900">
             EduNova Suite
           </div>
 
-          <div className="mt-1 text-xs font-medium text-slate-400">
+          <div className="mt-1 text-xs font-medium text-slate-500">
             Administrator Portal
           </div>
         </Link>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-5">
+      <nav className="flex-1 overflow-y-auto px-4 py-5">
         <div className="space-y-7">
           {sections.map((section) => (
             <div key={section.title}>
-              <div className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <div className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
                 {section.title}
               </div>
 
@@ -173,11 +173,11 @@ export default function Sidebar() {
                       href={item.href}
                       className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
                         isActive
-                          ? "bg-blue-600 text-white"
-                          : "text-slate-300 hover:bg-slate-900 hover:text-white"
+                          ? "bg-blue-50 text-blue-700"
+                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                       }`}
                     >
-                      <span className="flex w-6 shrink-0 items-center justify-center text-base">
+                      <span className="flex w-5 items-center justify-center text-base">
                         {item.icon}
                       </span>
 
@@ -191,14 +191,17 @@ export default function Sidebar() {
         </div>
       </nav>
 
-      <div className="border-t border-slate-800 px-6 py-4">
-        <div className="text-xs text-slate-500">
-          EduNova Suite
-        </div>
+      <div className="border-t border-slate-200 px-4 py-4">
+        <Link
+          href="/"
+          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+        >
+          <span className="flex w-5 items-center justify-center text-base">
+            ↗
+          </span>
 
-        <div className="mt-1 text-xs text-slate-600">
-          School Management Platform
-        </div>
+          <span>View Website</span>
+        </Link>
       </div>
     </aside>
   );
