@@ -47,8 +47,10 @@ model School {
   academicYears    AcademicYear[]
   timetableEntries TimetableEntry[]
   reportCardInfos  ReportCardInfo[]
-  staffTasks      StaffTask[]
-  studentNotes    StudentNote[]
+  staffTasks       StaffTask[]
+  studentNotes     StudentNote[]
+
+  accountingEntries AccountingEntry[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -90,7 +92,7 @@ model Student {
   firstName     String
   lastName      String
   gender        String
-  photoUrl String?
+  photoUrl      String?
   dateOfBirth   DateTime?
   phone         String?
   email         String?
@@ -301,12 +303,12 @@ model Result {
   grade           String?
   remark          String?
 
-  student      Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  class        SchoolClass  @relation(fields: [classId], references: [id], onDelete: Cascade)
-  subject      Subject      @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  teacher      Teacher?     @relation(fields: [teacherId], references: [id], onDelete: SetNull)
-academicYear AcademicYear? @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
-term        Term?          @relation(fields: [termId], references: [id], onDelete: Cascade)
+  student      Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  class        SchoolClass   @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subject      Subject       @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher      Teacher?      @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+  academicYear AcademicYear? @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  term         Term?         @relation(fields: [termId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -604,15 +606,16 @@ model ReportCardInfo {
   @@index([academicYearId])
   @@index([termId])
 }
+
 model StaffTask {
-  id          String   @id @default(cuid())
-  schoolId    String
-  userId      String
+  id       String @id @default(cuid())
+  schoolId String
+  userId   String
 
   title       String
   description String?
   dueDate     DateTime?
-  completed   Boolean  @default(false)
+  completed   Boolean   @default(false)
 
   school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -627,7 +630,7 @@ model StaffTask {
 }
 
 model StudentNote {
-  id        String   @id @default(cuid())
+  id        String @id @default(cuid())
   schoolId  String
   studentId String
   authorId  String
@@ -646,4 +649,23 @@ model StudentNote {
   @@index([studentId])
   @@index([authorId])
   @@index([createdAt])
+}
+
+model AccountingEntry {
+  id            String   @id @default(cuid())
+  type          String
+  category      String
+  description   String
+  amount        Float
+  reference     String?
+  paymentMethod String?
+  entryDate     DateTime
+  schoolId      String
+  school        School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([schoolId])
+  @@index([schoolId, type])
+  @@index([schoolId, entryDate])
 }
