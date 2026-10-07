@@ -1,10 +1,22 @@
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import StudentSidebar from "@/components/student/StudentSidebar";
+import { SESSION_COOKIE, verifySession } from "@/lib/auth";
 
-export default function StudentLayout({
+export default async function StudentLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE)?.value;
+
+  const session = verifySession(token);
+
+  if (!session || session.role !== "STUDENT") {
+    redirect("/login");
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="flex min-h-screen">
