@@ -27,91 +27,19 @@ async function getStaffSession() {
     return null;
   }
 
-  const user = await prisma.user.findFirst({
-    where: {
-      id: session.userId,
-      schoolId: session.schoolId,
-      active: true,
-      role: session.role,
-    },
-    select: {
-      id: true,
-      schoolId: true,
-      role: true,
-      teacherId: true,
-    },
-  });
-
-  if (!user) {
-    return null;
-  }
-
-  return {
-    session,
-    user,
-  };
+  return session;
 }
 
-async function teacherCanAccessStudent(
-  teacherId: string,
-  studentId: string,
-  schoolId: string
-) {
-  const student =
-    await prisma.student.findFirst({
-      where: {
-        id: studentId,
-        schoolId,
-      },
-      select: {
-        id: true,
-        classId: true,
-      },
-    });
-
-  if (!student?.classId) {
-    return null;
-  }
-
-  const classSubject =
-    await prisma.classSubject.findFirst({
-      where: {
-        teacherId,
-        classId: student.classId,
-        class: {
-          schoolId,
-        },
-        subject: {
-          schoolId,
-        },
-      },
-      select: {
-        id: true,
-      },
-    });
-
-  if (!classSubject) {
-    return null;
-  }
-
-  return student;
-}
-
-export async function GET(
-  request: Request
-) {
+export async function GET(request: Request) {
   try {
-    const result =
-      await getStaffSession();
+    const session = await getStaffSession();
 
-    if (!result) {
+    if (!session) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
       );
     }
-
-    const { session, user } = result;
 
     const { searchParams } =
       new URL(request.url);
@@ -119,82 +47,15 @@ export async function GET(
     const studentId =
       searchParams.get("studentId");
 
-    if (
-      studentId &&
-      session.role === "TEACHER"
-    ) {
-      if (!user.teacherId) {
-        return NextResponse.json(
-          {
-            error:
-              "Your account is not linked to a teacher profile.",
-          },
-          { status: 403 }
-        );
-      }
-
-      const student =
-        await teacherCanAccessStudent(
-          user.teacherId,
-          studentId,
-          session.schoolId
-        );
-
-      if (!student) {
-        return NextResponse.json(
-          {
-            error:
-              "You are not authorized to view notes for this student.",
-          },
-          { status: 403 }
-        );
-      }
-    }
-
-    if (
-      studentId &&
-      session.role !== "TEACHER"
-    ) {
-      const student =
-        await prisma.student.findFirst({
-          where: {
-            id: studentId,
-            schoolId: session.schoolId,
-          },
-          select: {
-            id: true,
-          },
-        });
-
-      if (!student) {
-        return NextResponse.json(
-          {
-            error:
-              "Student not found.",
-          },
-          { status: 404 }
-        );
-      }
-    }
-
     const notes =
       await prisma.studentNote.findMany({
         where: {
           schoolId: session.schoolId,
-
-          ...(studentId
-            ? {
-                studentId,
-              }
-            : {}),
-
+          ...(studentId ? { studentId } : {}),
           ...(session.role === "TEACHER"
-            ? {
-                authorId: user.id,
-              }
+            ? { authorId: session.userId }
             : {}),
         },
-
         include: {
           student: {
             select: {
@@ -204,7 +65,6 @@ export async function GET(
               studentNumber: true,
             },
           },
-
           author: {
             select: {
               id: true,
@@ -214,7 +74,6 @@ export async function GET(
             },
           },
         },
-
         orderBy: {
           createdAt: "desc",
         },
@@ -228,36 +87,33 @@ export async function GET(
     );
 
     return NextResponse.json(
-      {
-        error:
-          "Failed to load student notes.",
-      },
+      { error: "Failed to load student notes." },
       { status: 500 }
     );
   }
 }
 
-export async function POST(
-  request: Request
-) {
+export async function POST(request: Request) {
   try {
-    const result =
-      await getStaffSession();
+    const session = await getStaffSession();
 
-    if (!result) {
+    if (!session) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
       );
     }
 
-    const { session, user } = result;
-
     const body = await request.json();
 
     const studentId =
       typeof body.studentId === "string"
         ? body.studentId.trim()
+        : "";
+
+    const classId =
+      typeof body.classId === "string"
+        ? body.classId.trim()
         : "";
 
     const title =
@@ -270,95 +126,152 @@ export async function POST(
         ? body.content.trim()
         : "";
 
-    if (!studentId) {
-      return NextResponse.json(
-        {
-          error: "Student is required.",
-        },
-        { status: 400 }
-      );
-    }
-
     if (!title) {
       return NextResponse.json(
-        {
-          error:
-            "Note title is required.",
-        },
+        { error: "Note title is required." },
         { status: 400 }
       );
     }
 
     if (!content) {
       return NextResponse.json(
-        {
-          error:
-            "Note content is required.",
-        },
+        { error: "Note content is required." },
         { status: 400 }
       );
     }
 
-    if (title.length > 200) {
-      return NextResponse.json(
-        {
-          error:
-            "Note title is too long.",
-        },
-        { status: 400 }
-      );
-    }
-
-    let student;
-
-    if (session.role === "TEACHER") {
-      if (!user.teacherId) {
+    /*
+     * CLASS NOTE
+     *
+     * A teacher can send one note to every student
+     * in a class they are assigned to.
+     */
+    if (classId) {
+      if (session.role !== "TEACHER") {
         return NextResponse.json(
           {
             error:
-              "Your account is not linked to a teacher profile.",
+              "Class notes are available to teachers.",
           },
           { status: 403 }
         );
       }
 
-      student =
-        await teacherCanAccessStudent(
-          user.teacherId,
-          studentId,
-          session.schoolId
-        );
-
-      if (!student) {
-        return NextResponse.json(
-          {
-            error:
-              "You are not authorized to create a note for this student.",
+      const teacher = await prisma.teacher.findFirst({
+        where: {
+          schoolId: session.schoolId,
+          user: {
+            id: session.userId,
           },
-          { status: 403 }
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (!teacher) {
+        return NextResponse.json(
+          { error: "Teacher profile not found." },
+          { status: 404 }
         );
       }
-    } else {
-      student =
-        await prisma.student.findFirst({
+
+      const assignment =
+        await prisma.classSubject.findFirst({
           where: {
-            id: studentId,
-            schoolId: session.schoolId,
+            teacherId: teacher.id,
+            classId,
+            class: {
+              schoolId: session.schoolId,
+            },
           },
           select: {
             id: true,
           },
         });
 
-      if (!student) {
+      if (!assignment) {
         return NextResponse.json(
           {
             error:
-              "Student not found.",
+              "You are not assigned to this class.",
           },
-          { status: 404 }
+          { status: 403 }
         );
       }
+
+      const students =
+        await prisma.student.findMany({
+          where: {
+            schoolId: session.schoolId,
+            classId,
+          },
+          select: {
+            id: true,
+          },
+        });
+
+      if (students.length === 0) {
+        return NextResponse.json(
+          {
+            error:
+              "There are no students in this class.",
+          },
+          { status: 400 }
+        );
+      }
+
+      await prisma.studentNote.createMany({
+        data: students.map((student) => ({
+          schoolId: session.schoolId,
+          studentId: student.id,
+          authorId: session.userId,
+          title,
+          content,
+        })),
+      });
+
+      return NextResponse.json(
+        {
+          success: true,
+          count: students.length,
+          message: `Note sent to ${students.length} student${
+            students.length === 1 ? "" : "s"
+          }.`,
+        },
+        { status: 201 }
+      );
+    }
+
+    /*
+     * INDIVIDUAL NOTE
+     */
+    if (!studentId) {
+      return NextResponse.json(
+        {
+          error:
+            "Select a student or select a class.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const student =
+      await prisma.student.findFirst({
+        where: {
+          id: studentId,
+          schoolId: session.schoolId,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+    if (!student) {
+      return NextResponse.json(
+        { error: "Student not found." },
+        { status: 404 }
+      );
     }
 
     const note =
@@ -366,11 +279,10 @@ export async function POST(
         data: {
           schoolId: session.schoolId,
           studentId,
-          authorId: user.id,
+          authorId: session.userId,
           title,
           content,
         },
-
         include: {
           student: {
             select: {
@@ -380,7 +292,6 @@ export async function POST(
               studentNumber: true,
             },
           },
-
           author: {
             select: {
               firstName: true,
@@ -391,10 +302,9 @@ export async function POST(
         },
       });
 
-    return NextResponse.json(
-      note,
-      { status: 201 }
-    );
+    return NextResponse.json(note, {
+      status: 201,
+    });
   } catch (error) {
     console.error(
       "POST /api/staff/student-notes error:",
@@ -402,10 +312,7 @@ export async function POST(
     );
 
     return NextResponse.json(
-      {
-        error:
-          "Failed to create student note.",
-      },
+      { error: "Failed to create student note." },
       { status: 500 }
     );
   }

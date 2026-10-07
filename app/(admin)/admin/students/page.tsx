@@ -9,7 +9,6 @@ type Student = {
   firstName: string;
   lastName: string;
   gender: string;
-  photoUrl: string | null;
   className: string;
   guardianName: string;
 };
@@ -106,7 +105,7 @@ export default function StudentsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
+      {/* HEADER */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
@@ -118,15 +117,47 @@ export default function StudentsPage() {
           </p>
         </div>
 
-        <Link
-          href="/admin/students/new"
-          className="rounded-lg bg-blue-600 px-5 py-3 text-center font-medium text-white transition hover:bg-blue-700"
-        >
-          + Add Student
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href="/admin/students/import"
+            className="rounded-lg border border-blue-600 px-5 py-3 text-center font-medium text-blue-600 transition hover:bg-blue-50"
+          >
+            Import Students
+          </Link>
+
+          <Link
+            href="/admin/students/new"
+            className="rounded-lg bg-blue-600 px-5 py-3 text-center font-medium text-white transition hover:bg-blue-700"
+          >
+            + Add Student
+          </Link>
+        </div>
       </div>
 
-      {/* Statistics */}
+      {/* QUICK ACTIONS */}
+      <div className="rounded-xl border border-blue-100 bg-blue-50 p-5">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="font-bold text-blue-900">
+              Import existing students
+            </h2>
+
+            <p className="mt-1 text-sm text-blue-700">
+              Upload your school's student list using the EduNova import
+              template instead of entering students one by one.
+            </p>
+          </div>
+
+          <Link
+            href="/admin/students/import"
+            className="rounded-lg bg-blue-600 px-5 py-2.5 text-center font-semibold text-white hover:bg-blue-700"
+          >
+            Open Import Tool
+          </Link>
+        </div>
+      </div>
+
+      {/* STATISTICS */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-xl bg-white p-5 shadow">
           <p className="text-sm font-medium text-gray-500">
@@ -169,7 +200,7 @@ export default function StudentsPage() {
         </div>
       </div>
 
-      {/* Search */}
+      {/* SEARCH */}
       <div className="rounded-xl bg-white p-5 shadow">
         <label
           htmlFor="student-search"
@@ -196,7 +227,7 @@ export default function StudentsPage() {
         )}
       </div>
 
-      {/* Error */}
+      {/* ERROR */}
       {error && (
         <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
           <p className="font-medium">{error}</p>
@@ -210,10 +241,10 @@ export default function StudentsPage() {
         </div>
       )}
 
-      {/* Students Table */}
+      {/* STUDENTS TABLE */}
       <div className="overflow-hidden rounded-xl bg-white shadow">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[950px]">
+          <table className="w-full min-w-[900px]">
             <thead className="bg-gray-100">
               <tr>
                 <th className="p-4 text-left font-semibold">
@@ -274,33 +305,7 @@ export default function StudentsPage() {
                     </td>
 
                     <td className="p-4 text-gray-900">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-blue-100 text-sm font-bold text-blue-600">
-                          {student.photoUrl ? (
-                            <img
-                              src={student.photoUrl}
-                              alt={`${student.firstName} ${student.lastName}`}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <>
-                              {student.firstName.charAt(0)}
-                              {student.lastName.charAt(0)}
-                            </>
-                          )}
-                        </div>
-
-                        <div>
-                          <p className="font-semibold text-gray-900">
-                            {student.firstName}{" "}
-                            {student.lastName}
-                          </p>
-
-                          <p className="text-xs text-gray-500">
-                            Student
-                          </p>
-                        </div>
-                      </div>
+                      {student.firstName} {student.lastName}
                     </td>
 
                     <td className="p-4 text-gray-600">
@@ -352,7 +357,6 @@ export default function StudentsPage() {
         </div>
       </div>
 
-      {/* Student Count */}
       {!loading && (
         <div className="flex flex-col gap-1 text-sm text-gray-500 sm:flex-row sm:justify-between">
           <p>
