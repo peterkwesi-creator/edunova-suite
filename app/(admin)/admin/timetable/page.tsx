@@ -82,73 +82,125 @@ export default function TimetablePage() {
   });
 
   const selectedYear = useMemo(
-    () => academicYears.find((year) => year.id === academicYearId),
+    () =>
+      academicYears.find(
+        (year) => year.id === academicYearId
+      ),
     [academicYears, academicYearId]
   );
 
   const selectedTerm = useMemo(
-    () => selectedYear?.terms.find((term) => term.id === termId),
+    () =>
+      selectedYear?.terms.find(
+        (term) => term.id === termId
+      ),
     [selectedYear, termId]
   );
 
   async function loadInitialData() {
     try {
       setLoading(true);
+      setError("");
 
-      const [yearsResponse, classesResponse, subjectsResponse, teachersResponse] =
-        await Promise.all([
-          fetch("/api/admin/academic-years"),
-          fetch("/api/classes"),
-          fetch("/api/subjects"),
-          fetch("/api/teachers"),
-        ]);
+      const [
+        yearsResponse,
+        classesResponse,
+        subjectsResponse,
+        teachersResponse,
+      ] = await Promise.all([
+        fetch("/api/admin/academic-years"),
+        fetch("/api/classes"),
+        fetch("/api/subjects"),
+        fetch("/api/teachers"),
+      ]);
 
-      const [years, classesData, subjectsData, teachersData] =
-        await Promise.all([
-          yearsResponse.json(),
-          classesResponse.json(),
-          subjectsResponse.json(),
-          teachersResponse.json(),
-        ]);
+      const [
+        years,
+        classesData,
+        subjectsData,
+        teachersData,
+      ] = await Promise.all([
+        yearsResponse.json(),
+        classesResponse.json(),
+        subjectsResponse.json(),
+        teachersResponse.json(),
+      ]);
 
-      const yearList = Array.isArray(years) ? years : [];
+      /*
+       * The academic-years API may return either:
+       *
+       * [
+       *   ...
+       * ]
+       *
+       * or:
+       *
+       * {
+       *   academicYears: [...]
+       * }
+       *
+       * Support both formats.
+       */
+      const yearList: AcademicYear[] = Array.isArray(years)
+        ? years
+        : years?.academicYears ?? [];
+
+      /*
+       * Support both array and wrapped API responses.
+       */
+      const classList: SchoolClass[] = Array.isArray(classesData)
+        ? classesData
+        : classesData?.classes ?? [];
+
+      const subjectList: Subject[] = Array.isArray(subjectsData)
+        ? subjectsData
+        : subjectsData?.subjects ?? [];
+
+      const teacherList: Teacher[] = Array.isArray(teachersData)
+        ? teachersData
+        : teachersData?.teachers ?? [];
 
       setAcademicYears(yearList);
-
-      const classList = Array.isArray(classesData)
-        ? classesData
-        : classesData.classes || [];
-
-      const subjectList = Array.isArray(subjectsData)
-        ? subjectsData
-        : subjectsData.subjects || [];
-
-      const teacherList = Array.isArray(teachersData)
-        ? teachersData
-        : teachersData.teachers || [];
-
       setClasses(classList);
       setSubjects(subjectList);
       setTeachers(teacherList);
 
+      /*
+       * Automatically select the current academic year.
+       * If there is no current year, use the first available year.
+       */
       const currentYear =
-        yearList.find((year) => year.isCurrent) || yearList[0];
+        yearList.find((year) => year.isCurrent) ||
+        yearList[0];
 
       if (currentYear) {
         setAcademicYearId(currentYear.id);
 
-    const currentTerm =
-        currentYear.terms.find(
-        (term: AcademicYear["terms"][number]) => term.isCurrent
-        ) || currentYear.terms[0];
+        /*
+         * Automatically select the current term.
+         * If there is no current term, use the first term.
+         */
+        const currentTerm =
+          currentYear.terms?.find(
+            (term) => term.isCurrent
+          ) ||
+          currentYear.terms?.[0];
 
         if (currentTerm) {
           setTermId(currentTerm.id);
+        } else {
+          setTermId("");
         }
+      } else {
+        setAcademicYearId("");
+        setTermId("");
       }
     } catch (err) {
-      console.error(err);
-      setError("Failed to load timetable setup data.");
+      console.error("TIMETABLE INITIAL LOAD ERROR:", err);
+
+      setError(
+        "Failed to load timetable setup data."
+      );
     } finally {
       setLoading(false);
     }
@@ -161,6 +213,8 @@ export default function TimetablePage() {
     }
 
     try {
+      setError("");
+
       const params = new URLSearchParams({
         academicYearId,
         termId,
@@ -177,14 +231,27 @@ export default function TimetablePage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || "Failed to load timetable.");
+        setError(
+          data.error ||
+            "Failed to load timetable."
+        );
         return;
       }
 
-      setEntries(Array.isArray(data) ? data : []);
+      setEntries(
+        Array.isArray(data)
+          ? data
+          : data.entries ?? []
+      );
     } catch (err) {
-      console.error(err);
-      setError("Failed to load timetable.");
+      console.error(
+        "TIMETABLE ENTRIES LOAD ERROR:",
+        err
+      );
+
+      setError(
+        "Failed to load timetable."
+      );
     }
   }
 
@@ -194,12 +261,21 @@ export default function TimetablePage() {
 
   useEffect(() => {
     loadEntries();
-  }, [academicYearId, termId, classId]);
+  }, [
+    academicYearId,
+    termId,
+    classId,
+  ]);
 
   function openModal() {
     setForm({
-      classId: classId || classes[0]?.id || "",
-      subjectId: subjects[0]?.id || "",
+      classId:
+        classId ||
+        classes[0]?.id ||
+        "",
+      subjectId:
+        subjects[0]?.id ||
+        "",
       teacherId: "",
       dayOfWeek: "1",
       startTime: "08:00",
@@ -214,70 +290,154 @@ export default function TimetablePage() {
   }
 
   async function createEntry() {
+    if (!academicYearId) {
+      setError(
+        "Please select an academic year."
+      );
+      return;
+    }
+
+    if (!termId) {
+      setError(
+        "Please select a term."
+      );
+      return;
+    }
+
+    if (!form.classId) {
+      setError(
+        "Please select a class."
+      );
+      return;
+    }
+
+    if (!form.subjectId) {
+      setError(
+        "Please select a subject."
+      );
+      return;
+    }
+
+    if (!form.startTime || !form.endTime) {
+      setError(
+        "Please enter the start and end time."
+      );
+      return;
+    }
+
     setSaving(true);
     setMessage("");
     setError("");
 
     try {
-      const response = await fetch("/api/admin/timetable", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          academicYearId,
-          termId,
-          ...form,
-          dayOfWeek: Number(form.dayOfWeek),
-        }),
-      });
+      const response = await fetch(
+        "/api/admin/timetable",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            academicYearId,
+            termId,
+            ...form,
+            dayOfWeek: Number(
+              form.dayOfWeek
+            ),
+          }),
+        }
+      );
 
-      const data = await response.json();
+      const data =
+        await response.json();
 
       if (!response.ok) {
-        setError(data.error || "Failed to create timetable entry.");
+        setError(
+          data.error ||
+            "Failed to create timetable entry."
+        );
         return;
       }
 
-      setMessage("Timetable entry created successfully.");
+      setMessage(
+        "Timetable entry created successfully."
+      );
+
       setShowModal(false);
 
       await loadEntries();
     } catch (err) {
-      console.error(err);
-      setError("Something went wrong.");
+      console.error(
+        "CREATE TIMETABLE ERROR:",
+        err
+      );
+
+      setError(
+        "Something went wrong."
+      );
     } finally {
       setSaving(false);
     }
   }
 
-  async function deleteEntry(id: string) {
-    if (!window.confirm("Delete this timetable entry?")) {
+  async function deleteEntry(
+    id: string
+  ) {
+    const confirmed =
+      window.confirm(
+        "Delete this timetable entry?"
+      );
+
+    if (!confirmed) {
       return;
     }
 
-    try {
-      const response = await fetch(`/api/admin/timetable/${id}`, {
-        method: "DELETE",
-      });
+    setMessage("");
+    setError("");
 
-      const data = await response.json();
+    try {
+      const response =
+        await fetch(
+          `/api/admin/timetable/${id}`,
+          {
+            method: "DELETE",
+          }
+        );
+
+      const data =
+        await response.json();
 
       if (!response.ok) {
-        setError(data.error || "Failed to delete entry.");
+        setError(
+          data.error ||
+            "Failed to delete entry."
+        );
         return;
       }
 
-      setMessage("Timetable entry deleted.");
+      setMessage(
+        "Timetable entry deleted."
+      );
+
       await loadEntries();
     } catch (err) {
-      console.error(err);
-      setError("Something went wrong.");
+      console.error(
+        "DELETE TIMETABLE ERROR:",
+        err
+      );
+
+      setError(
+        "Something went wrong."
+      );
     }
   }
 
   const entriesByDay = useMemo(() => {
-    const result: Record<number, TimetableEntry[]> = {
+    const result: Record<
+      number,
+      TimetableEntry[]
+    > = {
       1: [],
       2: [],
       3: [],
@@ -287,7 +447,9 @@ export default function TimetablePage() {
 
     for (const entry of entries) {
       if (result[entry.dayOfWeek]) {
-        result[entry.dayOfWeek].push(entry);
+        result[
+          entry.dayOfWeek
+        ].push(entry);
       }
     }
 
@@ -311,13 +473,17 @@ export default function TimetablePage() {
           </h1>
 
           <p className="mt-1 text-gray-500">
-            Schedule classes, subjects and teachers for each term.
+            Schedule classes, subjects and
+            teachers for each term.
           </p>
         </div>
 
         <button
           onClick={openModal}
-          disabled={!academicYearId || !termId}
+          disabled={
+            !academicYearId ||
+            !termId
+          }
           className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
         >
           + Add Period
@@ -345,27 +511,46 @@ export default function TimetablePage() {
           <select
             value={academicYearId}
             onChange={(e) => {
-              const id = e.target.value;
+              const id =
+                e.target.value;
+
               setAcademicYearId(id);
 
-              const year = academicYears.find((item) => item.id === id);
+              const year =
+                academicYears.find(
+                  (item) =>
+                    item.id === id
+                );
 
               setTermId(
-                year?.terms.find((term) => term.isCurrent)?.id ||
-                  year?.terms[0]?.id ||
+                year?.terms?.find(
+                  (term) =>
+                    term.isCurrent
+                )?.id ||
+                  year?.terms?.[0]
+                    ?.id ||
                   ""
               );
             }}
             className="w-full rounded-lg border border-gray-300 px-4 py-3"
           >
-            <option value="">Select academic year</option>
+            <option value="">
+              Select academic year
+            </option>
 
-            {academicYears.map((year) => (
-              <option key={year.id} value={year.id}>
-                {year.name}
-                {year.isCurrent ? " (Current)" : ""}
-              </option>
-            ))}
+            {academicYears.map(
+              (year) => (
+                <option
+                  key={year.id}
+                  value={year.id}
+                >
+                  {year.name}
+                  {year.isCurrent
+                    ? " (Current)"
+                    : ""}
+                </option>
+              )
+            )}
           </select>
         </div>
 
@@ -376,17 +561,33 @@ export default function TimetablePage() {
 
           <select
             value={termId}
-            onChange={(e) => setTermId(e.target.value)}
+            onChange={(e) =>
+              setTermId(
+                e.target.value
+              )
+            }
             className="w-full rounded-lg border border-gray-300 px-4 py-3"
+            disabled={
+              !academicYearId
+            }
           >
-            <option value="">Select term</option>
+            <option value="">
+              Select term
+            </option>
 
-            {selectedYear?.terms.map((term) => (
-              <option key={term.id} value={term.id}>
-                {term.name}
-                {term.isCurrent ? " (Current)" : ""}
-              </option>
-            ))}
+            {selectedYear?.terms?.map(
+              (term) => (
+                <option
+                  key={term.id}
+                  value={term.id}
+                >
+                  {term.name}
+                  {term.isCurrent
+                    ? " (Current)"
+                    : ""}
+                </option>
+              )
+            )}
           </select>
         </div>
 
@@ -397,23 +598,65 @@ export default function TimetablePage() {
 
           <select
             value={classId}
-            onChange={(e) => setClassId(e.target.value)}
+            onChange={(e) =>
+              setClassId(
+                e.target.value
+              )
+            }
             className="w-full rounded-lg border border-gray-300 px-4 py-3"
           >
-            <option value="">All Classes</option>
+            <option value="">
+              All Classes
+            </option>
 
-            {classes.map((schoolClass) => (
-              <option key={schoolClass.id} value={schoolClass.id}>
-                {schoolClass.name}
-              </option>
-            ))}
+            {classes.map(
+              (schoolClass) => (
+                <option
+                  key={
+                    schoolClass.id
+                  }
+                  value={
+                    schoolClass.id
+                  }
+                >
+                  {schoolClass.name}
+                </option>
+              )
+            )}
           </select>
         </div>
       </div>
 
-      {!academicYearId || !termId ? (
+      {!academicYearId ||
+      !termId ? (
         <div className="rounded-2xl bg-white p-10 text-center text-gray-500 shadow-sm">
-          Create an academic year and term first.
+          {academicYears.length ===
+          0 ? (
+            <>
+              <p className="font-semibold text-gray-700">
+                No academic year was
+                loaded.
+              </p>
+
+              <p className="mt-2 text-sm text-gray-500">
+                Go to Academic Years and
+                confirm that an academic
+                year and term exist.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="font-semibold text-gray-700">
+                Select an academic year
+                and term.
+              </p>
+
+              <p className="mt-2 text-sm text-gray-500">
+                Choose the academic period
+                you want to manage.
+              </p>
+            </>
+          )}
         </div>
       ) : (
         <div className="space-y-6">
@@ -428,60 +671,105 @@ export default function TimetablePage() {
                 </h2>
               </div>
 
-              {entriesByDay[day.value].length === 0 ? (
+              {entriesByDay[
+                day.value
+              ].length === 0 ? (
                 <div className="p-6 text-sm text-gray-500">
                   No periods scheduled.
                 </div>
               ) : (
                 <div className="divide-y divide-gray-200">
-                  {entriesByDay[day.value].map((entry) => (
-                    <div
-                      key={entry.id}
-                      className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between"
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className="min-w-24 rounded-lg bg-blue-50 px-3 py-2 text-center">
-                          <p className="font-bold text-blue-700">
-                            {entry.startTime}
-                          </p>
-
-                          <p className="text-xs text-blue-500">
-                            {entry.endTime}
-                          </p>
-                        </div>
-
-                        <div>
-                          <h3 className="font-bold text-gray-900">
-                            {entry.subject.name}
-                          </h3>
-
-                          <p className="mt-1 text-sm text-gray-600">
-                            {entry.class.name}
-                          </p>
-
-                          {entry.teacher && (
-                            <p className="mt-1 text-sm text-gray-500">
-                              Teacher: {entry.teacher.firstName}{" "}
-                              {entry.teacher.lastName}
-                            </p>
-                          )}
-
-                          {entry.room && (
-                            <p className="mt-1 text-sm text-gray-500">
-                              Room: {entry.room}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => deleteEntry(entry.id)}
-                        className="rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50"
+                  {entriesByDay[
+                    day.value
+                  ].map(
+                    (entry) => (
+                      <div
+                        key={
+                          entry.id
+                        }
+                        className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between"
                       >
-                        Delete
-                      </button>
-                    </div>
-                  ))}
+                        <div className="flex items-start gap-4">
+                          <div className="min-w-24 rounded-lg bg-blue-50 px-3 py-2 text-center">
+                            <p className="font-bold text-blue-700">
+                              {
+                                entry.startTime
+                              }
+                            </p>
+
+                            <p className="text-xs text-blue-500">
+                              {
+                                entry.endTime
+                              }
+                            </p>
+                          </div>
+
+                          <div>
+                            <h3 className="font-bold text-gray-900">
+                              {
+                                entry
+                                  .subject
+                                  .name
+                              }
+                            </h3>
+
+                            <p className="mt-1 text-sm text-gray-600">
+                              {
+                                entry
+                                  .class
+                                  .name
+                              }
+                            </p>
+
+                            {entry.teacher && (
+                              <p className="mt-1 text-sm text-gray-500">
+                                Teacher:{" "}
+                                {
+                                  entry
+                                    .teacher
+                                    .firstName
+                                }{" "}
+                                {
+                                  entry
+                                    .teacher
+                                    .lastName
+                                }
+                              </p>
+                            )}
+
+                            {entry.room && (
+                              <p className="mt-1 text-sm text-gray-500">
+                                Room:{" "}
+                                {
+                                  entry.room
+                                }
+                              </p>
+                            )}
+
+                            {entry.notes && (
+                              <p className="mt-1 text-sm text-gray-500">
+                                Notes:{" "}
+                                {
+                                  entry.notes
+                                }
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() =>
+                            deleteEntry(
+                              entry.id
+                            )
+                          }
+                          className="rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )
+                  )}
                 </div>
               )}
             </div>
@@ -495,16 +783,27 @@ export default function TimetablePage() {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold text-gray-900">
-                  Add Timetable Period
+                  Add Timetable
+                  Period
                 </h2>
 
                 <p className="text-sm text-gray-500">
-                  {selectedYear?.name} · {selectedTerm?.name}
+                  {
+                    selectedYear?.name
+                  }{" "}
+                  ·{" "}
+                  {
+                    selectedTerm?.name
+                  }
                 </p>
               </div>
 
               <button
-                onClick={() => setShowModal(false)}
+                onClick={() =>
+                  setShowModal(
+                    false
+                  )
+                }
                 className="text-2xl text-gray-400 hover:text-gray-700"
               >
                 ×
@@ -518,22 +817,37 @@ export default function TimetablePage() {
                 </label>
 
                 <select
-                  value={form.classId}
+                  value={
+                    form.classId
+                  }
                   onChange={(e) =>
                     setForm({
                       ...form,
-                      classId: e.target.value,
+                      classId:
+                        e.target
+                          .value,
                     })
                   }
                   className="w-full rounded-lg border border-gray-300 px-4 py-3"
                 >
-                  <option value="">Select class</option>
+                  <option value="">
+                    Select class
+                  </option>
 
-                  {classes.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
+                  {classes.map(
+                    (item) => (
+                      <option
+                        key={
+                          item.id
+                        }
+                        value={
+                          item.id
+                        }
+                      >
+                        {item.name}
+                      </option>
+                    )
+                  )}
                 </select>
               </div>
 
@@ -543,22 +857,44 @@ export default function TimetablePage() {
                 </label>
 
                 <select
-                  value={form.subjectId}
+                  value={
+                    form.subjectId
+                  }
                   onChange={(e) =>
                     setForm({
                       ...form,
-                      subjectId: e.target.value,
+                      subjectId:
+                        e.target
+                          .value,
                     })
                   }
                   className="w-full rounded-lg border border-gray-300 px-4 py-3"
                 >
-                  <option value="">Select subject</option>
+                  <option value="">
+                    Select subject
+                  </option>
 
-                  {subjects.map((subject) => (
-                    <option key={subject.id} value={subject.id}>
-                      {subject.name} ({subject.code})
-                    </option>
-                  ))}
+                  {subjects.map(
+                    (subject) => (
+                      <option
+                        key={
+                          subject.id
+                        }
+                        value={
+                          subject.id
+                        }
+                      >
+                        {
+                          subject.name
+                        }{" "}
+                        (
+                        {
+                          subject.code
+                        }
+                        )
+                      </option>
+                    )
+                  )}
                 </select>
               </div>
 
@@ -568,22 +904,42 @@ export default function TimetablePage() {
                 </label>
 
                 <select
-                  value={form.teacherId}
+                  value={
+                    form.teacherId
+                  }
                   onChange={(e) =>
                     setForm({
                       ...form,
-                      teacherId: e.target.value,
+                      teacherId:
+                        e.target
+                          .value,
                     })
                   }
                   className="w-full rounded-lg border border-gray-300 px-4 py-3"
                 >
-                  <option value="">No teacher assigned</option>
+                  <option value="">
+                    No teacher assigned
+                  </option>
 
-                  {teachers.map((teacher) => (
-                    <option key={teacher.id} value={teacher.id}>
-                      {teacher.firstName} {teacher.lastName}
-                    </option>
-                  ))}
+                  {teachers.map(
+                    (teacher) => (
+                      <option
+                        key={
+                          teacher.id
+                        }
+                        value={
+                          teacher.id
+                        }
+                      >
+                        {
+                          teacher.firstName
+                        }{" "}
+                        {
+                          teacher.lastName
+                        }
+                      </option>
+                    )
+                  )}
                 </select>
               </div>
 
@@ -593,20 +949,33 @@ export default function TimetablePage() {
                 </label>
 
                 <select
-                  value={form.dayOfWeek}
+                  value={
+                    form.dayOfWeek
+                  }
                   onChange={(e) =>
                     setForm({
                       ...form,
-                      dayOfWeek: e.target.value,
+                      dayOfWeek:
+                        e.target
+                          .value,
                     })
                   }
                   className="w-full rounded-lg border border-gray-300 px-4 py-3"
                 >
-                  {days.map((day) => (
-                    <option key={day.value} value={day.value}>
-                      {day.name}
-                    </option>
-                  ))}
+                  {days.map(
+                    (day) => (
+                      <option
+                        key={
+                          day.value
+                        }
+                        value={
+                          day.value
+                        }
+                      >
+                        {day.name}
+                      </option>
+                    )
+                  )}
                 </select>
               </div>
 
@@ -617,11 +986,15 @@ export default function TimetablePage() {
 
                 <input
                   type="time"
-                  value={form.startTime}
+                  value={
+                    form.startTime
+                  }
                   onChange={(e) =>
                     setForm({
                       ...form,
-                      startTime: e.target.value,
+                      startTime:
+                        e.target
+                          .value,
                     })
                   }
                   className="w-full rounded-lg border border-gray-300 px-4 py-3"
@@ -635,11 +1008,15 @@ export default function TimetablePage() {
 
                 <input
                   type="time"
-                  value={form.endTime}
+                  value={
+                    form.endTime
+                  }
                   onChange={(e) =>
                     setForm({
                       ...form,
-                      endTime: e.target.value,
+                      endTime:
+                        e.target
+                          .value,
                     })
                   }
                   className="w-full rounded-lg border border-gray-300 px-4 py-3"
@@ -652,11 +1029,14 @@ export default function TimetablePage() {
                 </label>
 
                 <input
-                  value={form.room}
+                  value={
+                    form.room
+                  }
                   onChange={(e) =>
                     setForm({
                       ...form,
-                      room: e.target.value,
+                      room: e.target
+                        .value,
                     })
                   }
                   placeholder="e.g. Room 4"
@@ -670,11 +1050,15 @@ export default function TimetablePage() {
                 </label>
 
                 <input
-                  value={form.notes}
+                  value={
+                    form.notes
+                  }
                   onChange={(e) =>
                     setForm({
                       ...form,
-                      notes: e.target.value,
+                      notes:
+                        e.target
+                          .value,
                     })
                   }
                   placeholder="Optional"
@@ -685,18 +1069,26 @@ export default function TimetablePage() {
 
             <div className="mt-6 flex justify-end gap-3">
               <button
-                onClick={() => setShowModal(false)}
+                onClick={() =>
+                  setShowModal(
+                    false
+                  )
+                }
                 className="rounded-lg border border-gray-300 px-4 py-2 font-semibold text-gray-700"
               >
                 Cancel
               </button>
 
               <button
-                onClick={createEntry}
+                onClick={
+                  createEntry
+                }
                 disabled={saving}
                 className="rounded-lg bg-blue-600 px-5 py-2 font-semibold text-white hover:bg-blue-700 disabled:bg-gray-300"
               >
-                {saving ? "Saving..." : "Add Period"}
+                {saving
+                  ? "Saving..."
+                  : "Add Period"}
               </button>
             </div>
           </div>
