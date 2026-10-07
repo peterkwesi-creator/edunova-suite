@@ -105,7 +105,7 @@ export default function StudentsPage() {
 
   return (
     <div className="space-y-6">
-      {/* HEADER */}
+      {/* Page Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
@@ -117,10 +117,10 @@ export default function StudentsPage() {
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row">
           <Link
             href="/admin/students/import"
-            className="rounded-lg border border-blue-600 px-5 py-3 text-center font-medium text-blue-600 transition hover:bg-blue-50"
+            className="rounded-lg border border-indigo-600 bg-white px-5 py-3 text-center font-medium text-indigo-600 transition hover:bg-indigo-50"
           >
             Import Students
           </Link>
@@ -134,30 +134,30 @@ export default function StudentsPage() {
         </div>
       </div>
 
-      {/* QUICK ACTIONS */}
-      <div className="rounded-xl border border-blue-100 bg-blue-50 p-5">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      {/* Import Quick Action */}
+      <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="font-bold text-blue-900">
+            <h2 className="font-semibold text-indigo-900">
               Import existing students
             </h2>
 
-            <p className="mt-1 text-sm text-blue-700">
-              Upload your school's student list using the EduNova import
-              template instead of entering students one by one.
+            <p className="mt-1 text-sm text-indigo-700">
+              Add many students at once instead of entering them
+              individually.
             </p>
           </div>
 
           <Link
             href="/admin/students/import"
-            className="rounded-lg bg-blue-600 px-5 py-2.5 text-center font-semibold text-white hover:bg-blue-700"
+            className="rounded-lg bg-indigo-600 px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-indigo-700"
           >
-            Open Import Tool
+            Open Import
           </Link>
         </div>
       </div>
 
-      {/* STATISTICS */}
+      {/* Statistics */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-xl bg-white p-5 shadow">
           <p className="text-sm font-medium text-gray-500">
@@ -200,7 +200,7 @@ export default function StudentsPage() {
         </div>
       </div>
 
-      {/* SEARCH */}
+      {/* Search */}
       <div className="rounded-xl bg-white p-5 shadow">
         <label
           htmlFor="student-search"
@@ -227,7 +227,7 @@ export default function StudentsPage() {
         )}
       </div>
 
-      {/* ERROR */}
+      {/* Error */}
       {error && (
         <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
           <p className="font-medium">{error}</p>
@@ -241,7 +241,7 @@ export default function StudentsPage() {
         </div>
       )}
 
-      {/* STUDENTS TABLE */}
+      {/* Students Table */}
       <div className="overflow-hidden rounded-xl bg-white shadow">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px]">
@@ -357,6 +357,7 @@ export default function StudentsPage() {
         </div>
       </div>
 
+      {/* Student Count */}
       {!loading && (
         <div className="flex flex-col gap-1 text-sm text-gray-500 sm:flex-row sm:justify-between">
           <p>

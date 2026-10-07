@@ -3,6 +3,7 @@
 import {
   FormEvent,
   useEffect,
+  useMemo,
   useState,
 } from "react";
 
@@ -35,18 +36,33 @@ type Note = {
   };
 };
 
+type ClassOption = {
+  id: string;
+  name: string;
+};
+
 async function fetchJson(
   url: string,
   options?: RequestInit
 ) {
-  const response = await fetch(url, options);
+  const response = await fetch(
+    url,
+    options
+  );
 
   const contentType =
-    response.headers.get("content-type") || "";
+    response.headers.get(
+      "content-type"
+    ) || "";
 
-  const text = await response.text();
+  const text =
+    await response.text();
 
-  if (!contentType.includes("application/json")) {
+  if (
+    !contentType.includes(
+      "application/json"
+    )
+  ) {
     throw new Error(
       `${url} returned HTML instead of JSON. Status: ${response.status}`
     );
@@ -63,9 +79,10 @@ async function fetchJson(
   }
 
   if (!response.ok) {
-    const errorData = data as {
-      error?: string;
-    };
+    const errorData =
+      data as {
+        error?: string;
+      };
 
     throw new Error(
       errorData?.error ||
@@ -76,8 +93,12 @@ async function fetchJson(
   return data;
 }
 
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString(
+function formatDate(
+  value: string
+) {
+  return new Date(
+    value
+  ).toLocaleDateString(
     "en-GH",
     {
       day: "numeric",
@@ -94,7 +115,15 @@ export default function TeacherNotesPage() {
   const [notes, setNotes] =
     useState<Note[]>([]);
 
+  const [recipientType, setRecipientType] =
+    useState<
+      "student" | "class"
+    >("student");
+
   const [studentId, setStudentId] =
+    useState("");
+
+  const [classId, setClassId] =
     useState("");
 
   const [title, setTitle] =
@@ -124,12 +153,18 @@ export default function TeacherNotesPage() {
         studentData,
         noteData,
       ] = await Promise.all([
-        fetchJson("/api/teacher/students"),
-        fetchJson("/api/staff/student-notes"),
+        fetchJson(
+          "/api/teacher/students"
+        ),
+        fetchJson(
+          "/api/staff/student-notes"
+        ),
       ]);
 
       setStudents(
-        Array.isArray(studentData)
+        Array.isArray(
+          studentData
+        )
           ? studentData
           : []
       );
@@ -156,23 +191,106 @@ export default function TeacherNotesPage() {
     loadData();
   }, []);
 
+  const classes =
+    useMemo<ClassOption[]>(
+      () => {
+        const map =
+          new Map<
+            string,
+            ClassOption
+          >();
+
+        for (const student of students) {
+          if (!student.class) {
+            continue;
+          }
+
+          if (
+            !map.has(
+              student.class.id
+            )
+          ) {
+            map.set(
+              student.class.id,
+              {
+                id:
+                  student.class.id,
+                name:
+                  student.class.name,
+              }
+            );
+          }
+        }
+
+        return Array.from(
+          map.values()
+        ).sort((a, b) =>
+          a.name.localeCompare(
+            b.name
+          )
+        );
+      },
+      [students]
+    );
+
+  const selectedClassStudents =
+    useMemo(
+      () =>
+        students.filter(
+          (student) =>
+            student.class?.id ===
+            classId
+        ),
+      [students, classId]
+    );
+
   async function createNote(
     event: FormEvent<HTMLFormElement>
   ) {
     event.preventDefault();
 
-    if (!studentId) {
-      setError("Please select a student.");
+    if (
+      recipientType ===
+        "student" &&
+      !studentId
+    ) {
+      setError(
+        "Please select a student."
+      );
+      return;
+    }
+
+    if (
+      recipientType === "class" &&
+      !classId
+    ) {
+      setError(
+        "Please select a class."
+      );
       return;
     }
 
     if (!title.trim()) {
-      setError("Please enter a note title.");
+      setError(
+        "Please enter a note title."
+      );
       return;
     }
 
     if (!content.trim()) {
-      setError("Please enter the note.");
+      setError(
+        "Please enter the note."
+      );
+      return;
+    }
+
+    if (
+      recipientType === "class" &&
+      selectedClassStudents.length === 0
+    ) {
+      setError(
+        "There are no students in the selected class."
+      );
       return;
     }
 
@@ -181,34 +299,77 @@ export default function TeacherNotesPage() {
       setError("");
       setSuccess("");
 
-      const data = await fetchJson(
-        "/api/staff/student-notes",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-          body: JSON.stringify({
-            studentId,
-            title: title.trim(),
-            content: content.trim(),
-          }),
-        }
-      );
+      const body =
+        recipientType ===
+        "class"
+          ? {
+              classId,
+              title:
+                title.trim(),
+              content:
+                content.trim(),
+            }
+          : {
+              studentId,
+              title:
+                title.trim(),
+              content:
+                content.trim(),
+            };
 
-      setNotes((current) => [
-        data as Note,
-        ...current,
-      ]);
+      const data =
+        await fetchJson(
+          "/api/staff/student-notes",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+            body:
+              JSON.stringify(body),
+          }
+        );
+
+      if (
+        recipientType ===
+        "class"
+      ) {
+       const responseData = data as {
+        count?: number;
+};
+
+      const count =
+       typeof responseData.count === "number"
+         ? responseData.count
+         : selectedClassStudents.length;
+
+        setSuccess(
+          `Note sent successfully to ${count} student${
+            count === 1
+              ? ""
+              : "s"
+          } in the selected class.`
+        );
+      } else {
+        setNotes(
+          (current) => [
+            data as Note,
+            ...current,
+          ]
+        );
+
+        setSuccess(
+          "Student note created successfully."
+        );
+      }
 
       setStudentId("");
+      setClassId("");
       setTitle("");
       setContent("");
 
-      setSuccess(
-        "Student note created successfully."
-      );
+      await loadData();
     } catch (err) {
       console.error(err);
 
@@ -239,7 +400,6 @@ export default function TeacherNotesPage() {
   return (
     <main className="min-h-screen bg-slate-50 p-6">
       <div className="mx-auto max-w-6xl space-y-6">
-
         {/* HEADER */}
         <div>
           <p className="text-sm font-semibold text-indigo-600">
@@ -251,8 +411,9 @@ export default function TeacherNotesPage() {
           </h1>
 
           <p className="mt-2 text-slate-500">
-            Write private notes and feedback
-            for students in your assigned classes.
+            Send private feedback to an
+            individual student or a note to
+            an entire class.
           </p>
         </div>
 
@@ -272,50 +433,188 @@ export default function TeacherNotesPage() {
         {/* CREATE NOTE */}
         <section className="rounded-2xl border bg-white p-6 shadow-sm">
           <h2 className="text-xl font-bold text-slate-900">
-            Write Student Note
+            Send Note
           </h2>
 
           <p className="mt-1 text-sm text-slate-500">
-            Add feedback or an important note
-            about a student.
+            Choose whether this note is for one
+            student or your entire assigned class.
           </p>
 
           <form
             onSubmit={createNote}
             className="mt-6 space-y-5"
           >
+            {/* RECIPIENT TYPE */}
             <div>
               <label className="mb-2 block text-sm font-semibold text-slate-700">
-                Student
+                Send To
               </label>
 
-              <select
-                value={studentId}
-                onChange={(event) =>
-                  setStudentId(
-                    event.target.value
-                  )
-                }
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-              >
-                <option value="">
-                  Select a student
-                </option>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRecipientType(
+                      "student"
+                    );
+                    setClassId("");
+                    setSuccess("");
+                    setError("");
+                  }}
+                  className={`rounded-xl border px-4 py-4 text-left transition ${
+                    recipientType ===
+                    "student"
+                      ? "border-indigo-600 bg-indigo-50 ring-2 ring-indigo-100"
+                      : "border-slate-200 bg-white hover:bg-slate-50"
+                  }`}
+                >
+                  <p className="font-bold text-slate-900">
+                    Individual Student
+                  </p>
 
-                {students.map((student) => (
-                  <option
-                    key={student.id}
-                    value={student.id}
-                  >
-                    {student.firstName}{" "}
-                    {student.lastName} —{" "}
-                    {student.class?.name ||
-                      "No class"}
-                  </option>
-                ))}
-              </select>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Send a private note to one
+                    student.
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRecipientType(
+                      "class"
+                    );
+                    setStudentId("");
+                    setSuccess("");
+                    setError("");
+                  }}
+                  className={`rounded-xl border px-4 py-4 text-left transition ${
+                    recipientType ===
+                    "class"
+                      ? "border-indigo-600 bg-indigo-50 ring-2 ring-indigo-100"
+                      : "border-slate-200 bg-white hover:bg-slate-50"
+                  }`}
+                >
+                  <p className="font-bold text-slate-900">
+                    Entire Class
+                  </p>
+
+                  <p className="mt-1 text-sm text-slate-500">
+                    Send the same note to every
+                    student in the class.
+                  </p>
+                </button>
+              </div>
             </div>
 
+            {/* STUDENT */}
+            {recipientType ===
+              "student" && (
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                  Student
+                </label>
+
+                <select
+                  value={studentId}
+                  onChange={(event) =>
+                    setStudentId(
+                      event.target.value
+                    )
+                  }
+                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                >
+                  <option value="">
+                    Select a student
+                  </option>
+
+                  {students.map(
+                    (student) => (
+                      <option
+                        key={
+                          student.id
+                        }
+                        value={
+                          student.id
+                        }
+                      >
+                        {
+                          student.firstName
+                        }{" "}
+                        {
+                          student.lastName
+                        }{" "}
+                        —{" "}
+                        {student.class
+                          ?.name ||
+                          "No class"}
+                      </option>
+                    )
+                  )}
+                </select>
+              </div>
+            )}
+
+            {/* CLASS */}
+            {recipientType ===
+              "class" && (
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                  Class
+                </label>
+
+                <select
+                  value={classId}
+                  onChange={(event) =>
+                    setClassId(
+                      event.target.value
+                    )
+                  }
+                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                >
+                  <option value="">
+                    Select a class
+                  </option>
+
+                  {classes.map(
+                    (schoolClass) => (
+                      <option
+                        key={
+                          schoolClass.id
+                        }
+                        value={
+                          schoolClass.id
+                        }
+                      >
+                        {
+                          schoolClass.name
+                        }
+                      </option>
+                    )
+                  )}
+                </select>
+
+                {classId && (
+                  <p className="mt-2 text-sm text-indigo-600">
+                    This will send the note to{" "}
+                    <strong>
+                      {
+                        selectedClassStudents.length
+                      }
+                    </strong>{" "}
+                    student
+                    {selectedClassStudents.length ===
+                    1
+                      ? ""
+                      : "s"}{" "}
+                    in this class.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* TITLE */}
             <div>
               <label className="mb-2 block text-sm font-semibold text-slate-700">
                 Note Title
@@ -334,6 +633,7 @@ export default function TeacherNotesPage() {
               />
             </div>
 
+            {/* CONTENT */}
             <div>
               <label className="mb-2 block text-sm font-semibold text-slate-700">
                 Note
@@ -358,8 +658,11 @@ export default function TeacherNotesPage() {
               className="rounded-xl bg-indigo-600 px-6 py-3 font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-400"
             >
               {saving
-                ? "Saving..."
-                : "Save Student Note"}
+                ? "Sending..."
+                : recipientType ===
+                    "class"
+                  ? "Send To Entire Class"
+                  : "Save Student Note"}
             </button>
           </form>
         </section>
@@ -383,7 +686,8 @@ export default function TeacherNotesPage() {
             </span>
           </div>
 
-          {notes.length === 0 ? (
+          {notes.length ===
+          0 ? (
             <div className="mt-6 rounded-xl bg-slate-50 p-8 text-center">
               <p className="text-slate-500">
                 You have not written any student
@@ -392,39 +696,55 @@ export default function TeacherNotesPage() {
             </div>
           ) : (
             <div className="mt-6 grid gap-4 md:grid-cols-2">
-              {notes.map((note) => (
-                <article
-                  key={note.id}
-                  className="rounded-xl border border-slate-200 p-5"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h3 className="font-bold text-slate-900">
-                        {note.title}
-                      </h3>
+              {notes.map(
+                (note) => (
+                  <article
+                    key={note.id}
+                    className="rounded-xl border border-slate-200 p-5"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h3 className="font-bold text-slate-900">
+                          {note.title}
+                        </h3>
 
-                      <p className="mt-1 text-sm font-semibold text-indigo-600">
-                        {note.student.firstName}{" "}
-                        {note.student.lastName}
-                      </p>
+                        <p className="mt-1 text-sm font-semibold text-indigo-600">
+                          {
+                            note
+                              .student
+                              .firstName
+                          }{" "}
+                          {
+                            note
+                              .student
+                              .lastName
+                          }
+                        </p>
 
-                      <p className="mt-1 text-xs text-slate-400">
-                        {note.student.studentNumber}
-                      </p>
+                        <p className="mt-1 text-xs text-slate-400">
+                          {
+                            note
+                              .student
+                              .studentNumber
+                          }
+                        </p>
+                      </div>
+
+                      <span className="shrink-0 text-xs text-slate-400">
+                        {formatDate(
+                          note.createdAt
+                        )}
+                      </span>
                     </div>
 
-                    <span className="shrink-0 text-xs text-slate-400">
-                      {formatDate(
-                        note.createdAt
-                      )}
-                    </span>
-                  </div>
-
-                  <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-slate-600">
-                    {note.content}
-                  </p>
-                </article>
-              ))}
+                    <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-slate-600">
+                      {
+                        note.content
+                      }
+                    </p>
+                  </article>
+                )
+              )}
             </div>
           )}
         </section>
