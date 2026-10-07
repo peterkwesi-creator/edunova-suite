@@ -60,48 +60,43 @@ const days = [
 ];
 
 export default function TeacherTimetablePage() {
-  const [entries, setEntries] = useState<
-    TimetableEntry[]
-  >([]);
+  const [entries, setEntries] = useState<TimetableEntry[]>([]);
 
-  const [years, setYears] = useState<
-    AcademicYear[]
-  >([]);
+  const [years, setYears] = useState<AcademicYear[]>([]);
 
-  const [selectedYear, setSelectedYear] =
-    useState("");
+  const [selectedYear, setSelectedYear] = useState("");
 
-  const [selectedTerm, setSelectedTerm] =
-    useState("");
+  const [selectedTerm, setSelectedTerm] = useState("");
 
-  const [loading, setLoading] =
-    useState(true);
+  const [loading, setLoading] = useState(true);
 
-  const [error, setError] =
-    useState("");
+  const [error, setError] = useState("");
 
   async function loadYears() {
     try {
-      const response = await fetch(
-        "/api/admin/academic-years"
-      );
+      setError("");
+
+      const response = await fetch("/api/academic-periods");
 
       const data = await response.json();
 
       if (!response.ok) {
         throw new Error(
-          data.error ||
-            "Failed to load academic years"
+          data.error || "Failed to load academic years"
         );
       }
 
-      setYears(data);
+      const academicYears: AcademicYear[] =
+        Array.isArray(data)
+          ? data
+          : data.academicYears ?? data.years ?? [];
+
+      setYears(academicYears);
 
       const currentYear =
-        data.find(
-          (year: AcademicYear) =>
-            year.isCurrent
-        ) ?? data[0];
+        academicYears.find(
+          (year: AcademicYear) => year.isCurrent
+        ) ?? academicYears[0];
 
       if (!currentYear) {
         return;
@@ -111,8 +106,7 @@ export default function TeacherTimetablePage() {
 
       const currentTerm =
         currentYear.terms.find(
-          (term: Term) =>
-            term.isCurrent
+          (term: Term) => term.isCurrent
         ) ?? currentYear.terms[0];
 
       if (currentTerm) {
@@ -134,21 +128,14 @@ export default function TeacherTimetablePage() {
       setLoading(true);
       setError("");
 
-      const params =
-        new URLSearchParams();
+      const params = new URLSearchParams();
 
       if (selectedYear) {
-        params.set(
-          "academicYearId",
-          selectedYear
-        );
+        params.set("academicYearId", selectedYear);
       }
 
       if (selectedTerm) {
-        params.set(
-          "termId",
-          selectedTerm
-        );
+        params.set("termId", selectedTerm);
       }
 
       const response = await fetch(
@@ -159,8 +146,7 @@ export default function TeacherTimetablePage() {
 
       if (!response.ok) {
         throw new Error(
-          data.error ||
-            "Failed to load timetable"
+          data.error || "Failed to load timetable"
         );
       }
 
@@ -188,20 +174,14 @@ export default function TeacherTimetablePage() {
     }
   }, [selectedYear, selectedTerm]);
 
-  const currentYear =
-    years.find(
-      (year) =>
-        year.id === selectedYear
-    );
+  const currentYear = years.find(
+    (year) => year.id === selectedYear
+  );
 
-  const terms =
-    currentYear?.terms ?? [];
+  const terms = currentYear?.terms ?? [];
 
   const grouped = useMemo(() => {
-    const result: Record<
-      number,
-      TimetableEntry[]
-    > = {};
+    const result: Record<number, TimetableEntry[]> = {};
 
     for (const day of days) {
       result[day.id] = [];
@@ -212,9 +192,7 @@ export default function TeacherTimetablePage() {
         result[entry.dayOfWeek] = [];
       }
 
-      result[entry.dayOfWeek].push(
-        entry
-      );
+      result[entry.dayOfWeek].push(entry);
     }
 
     return result;
@@ -223,7 +201,6 @@ export default function TeacherTimetablePage() {
   return (
     <main className="min-h-screen bg-gray-50 p-6 md:p-8">
       <div className="mx-auto max-w-7xl">
-
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-black text-gray-900">
@@ -231,14 +208,13 @@ export default function TeacherTimetablePage() {
           </h1>
 
           <p className="mt-2 text-gray-500">
-            View your teaching schedule for
-            the selected academic period.
+            View your teaching schedule for the selected academic
+            period.
           </p>
         </div>
 
         {/* Filters */}
         <div className="mb-6 grid gap-4 rounded-2xl border bg-white p-5 md:grid-cols-2">
-
           {/* Academic Year */}
           <div>
             <label className="mb-2 block text-sm font-bold text-gray-700">
@@ -248,27 +224,20 @@ export default function TeacherTimetablePage() {
             <select
               value={selectedYear}
               onChange={(event) => {
-                const yearId =
-                  event.target.value;
+                const yearId = event.target.value;
 
                 setSelectedYear(yearId);
 
-                const year =
-                  years.find(
-                    (item) =>
-                      item.id === yearId
-                  );
+                const year = years.find(
+                  (item) => item.id === yearId
+                );
 
                 const term =
                   year?.terms.find(
-                    (item: Term) =>
-                      item.isCurrent
-                  ) ??
-                  year?.terms[0];
+                    (item: Term) => item.isCurrent
+                  ) ?? year?.terms[0];
 
-                setSelectedTerm(
-                  term?.id ?? ""
-                );
+                setSelectedTerm(term?.id ?? "");
               }}
               className="w-full rounded-xl border px-4 py-3 outline-none focus:border-blue-500"
             >
@@ -296,9 +265,7 @@ export default function TeacherTimetablePage() {
             <select
               value={selectedTerm}
               onChange={(event) =>
-                setSelectedTerm(
-                  event.target.value
-                )
+                setSelectedTerm(event.target.value)
               }
               className="w-full rounded-xl border px-4 py-3 outline-none focus:border-blue-500"
             >
@@ -306,16 +273,14 @@ export default function TeacherTimetablePage() {
                 Select term
               </option>
 
-              {terms.map(
-                (term: Term) => (
-                  <option
-                    key={term.id}
-                    value={term.id}
-                  >
-                    {term.name}
-                  </option>
-                )
-              )}
+              {terms.map((term: Term) => (
+                <option
+                  key={term.id}
+                  value={term.id}
+                >
+                  {term.name}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -344,9 +309,8 @@ export default function TeacherTimetablePage() {
             </h2>
 
             <p className="mt-2 text-gray-500">
-              No teaching periods have been
-              assigned for this academic
-              period.
+              No teaching periods have been assigned for this
+              academic period.
             </p>
           </div>
         ) : (
@@ -365,75 +329,54 @@ export default function TeacherTimetablePage() {
 
                 <div className="divide-y">
                   {grouped[day.id]?.length ? (
-                    grouped[day.id].map(
-                      (entry) => (
-                        <div
-                          key={entry.id}
-                          className="grid gap-4 p-5 md:grid-cols-[140px_1fr_auto]"
-                        >
-                          {/* Time */}
-                          <div>
-                            <p className="font-black text-blue-600">
-                              {
-                                entry.startTime
-                              }
-                            </p>
+                    grouped[day.id].map((entry) => (
+                      <div
+                        key={entry.id}
+                        className="grid gap-4 p-5 md:grid-cols-[140px_1fr_auto]"
+                      >
+                        {/* Time */}
+                        <div>
+                          <p className="font-black text-blue-600">
+                            {entry.startTime}
+                          </p>
 
-                            <p className="text-sm text-gray-400">
-                              {
-                                entry.endTime
-                              }
-                            </p>
-                          </div>
-
-                          {/* Subject */}
-                          <div>
-                            <h3 className="font-bold text-gray-900">
-                              {
-                                entry
-                                  .subject
-                                  .name
-                              }
-                            </h3>
-
-                            <p className="mt-1 text-sm text-gray-500">
-                              {
-                                entry
-                                  .subject
-                                  .code
-                              }
-                            </p>
-
-                            <p className="mt-2 text-sm font-semibold text-gray-700">
-                              Class:{" "}
-                              {
-                                entry
-                                  .class
-                                  .name
-                              }
-                            </p>
-                          </div>
-
-                          {/* Room */}
-                          <div className="text-left md:text-right">
-                            {entry.room && (
-                              <p className="text-sm font-semibold text-gray-700">
-                                Room{" "}
-                                {entry.room}
-                              </p>
-                            )}
-
-                            {entry.notes && (
-                              <p className="mt-1 text-xs text-gray-400">
-                                {
-                                  entry.notes
-                                }
-                              </p>
-                            )}
-                          </div>
+                          <p className="text-sm text-gray-400">
+                            {entry.endTime}
+                          </p>
                         </div>
-                      )
-                    )
+
+                        {/* Subject */}
+                        <div>
+                          <h3 className="font-bold text-gray-900">
+                            {entry.subject.name}
+                          </h3>
+
+                          <p className="mt-1 text-sm text-gray-500">
+                            {entry.subject.code}
+                          </p>
+
+                          <p className="mt-2 text-sm font-semibold text-gray-700">
+                            Class:{" "}
+                            {entry.class.name}
+                          </p>
+                        </div>
+
+                        {/* Room */}
+                        <div className="text-left md:text-right">
+                          {entry.room && (
+                            <p className="text-sm font-semibold text-gray-700">
+                              Room {entry.room}
+                            </p>
+                          )}
+
+                          {entry.notes && (
+                            <p className="mt-1 text-xs text-gray-400">
+                              {entry.notes}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))
                   ) : (
                     <div className="p-5 text-sm text-gray-400">
                       No classes scheduled.
