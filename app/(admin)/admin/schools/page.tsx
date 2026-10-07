@@ -22,6 +22,7 @@ export default function SchoolsPage() {
   const [schools, setSchools] = useState<School[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   async function loadSchools() {
     try {
@@ -48,6 +49,70 @@ export default function SchoolsPage() {
   useEffect(() => {
     loadSchools();
   }, []);
+
+  async function deleteSchool(school: School) {
+    const confirmed = window.confirm(
+      `WARNING: You are about to permanently delete "${school.name}".\n\n` +
+        `This will remove the school and its associated data from EduNova.\n\n` +
+        `This action cannot be undone.\n\n` +
+        `Click OK only if you are sure you want to delete this school.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setDeletingId(school.id);
+      setError("");
+
+      const response = await fetch(
+        `/api/schools/${school.id}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            confirmation: school.name,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error || "Failed to delete school."
+        );
+      }
+
+      setSchools((currentSchools) =>
+        currentSchools.filter(
+          (item) => item.id !== school.id
+        )
+      );
+
+      window.alert(
+        `"${school.name}" has been deleted successfully.`
+      );
+    } catch (error) {
+      console.error("DELETE SCHOOL ERROR:", error);
+
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to delete school.";
+
+      setError(message);
+
+      window.alert(
+        `Unable to delete "${school.name}".\n\n${message}`
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   return (
     <div className="p-6">
@@ -237,6 +302,19 @@ export default function SchoolsPage() {
                     Customize
                   </Link>
                 </div>
+
+                {/* DELETE */}
+
+                <button
+                  type="button"
+                  onClick={() => deleteSchool(school)}
+                  disabled={deletingId === school.id}
+                  className="mt-3 w-full rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {deletingId === school.id
+                    ? "Deleting School..."
+                    : "Delete School"}
+                </button>
               </div>
             </div>
           ))}

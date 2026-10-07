@@ -16,37 +16,27 @@ type Params = {
 };
 
 async function getSuperAdmin() {
-  const cookieStore =
-    await cookies();
+  const cookieStore = await cookies();
 
-  const session =
-    verifySession(
-      cookieStore.get(
-        SESSION_COOKIE
-      )?.value
-    );
+  const session = verifySession(
+    cookieStore.get(SESSION_COOKIE)?.value
+  );
 
-  if (
-    !session ||
-    session.role !==
-      "SUPER_ADMIN"
-  ) {
+  if (!session || session.role !== "SUPER_ADMIN") {
     return null;
   }
 
-  const user =
-    await prisma.user.findFirst({
-      where: {
-        id: session.userId,
-        schoolId:
-          session.schoolId,
-        role: "SUPER_ADMIN",
-        active: true,
-      },
-      select: {
-        id: true,
-      },
-    });
+  const user = await prisma.user.findFirst({
+    where: {
+      id: session.userId,
+      schoolId: session.schoolId,
+      role: "SUPER_ADMIN",
+      active: true,
+    },
+    select: {
+      id: true,
+    },
+  });
 
   return user;
 }
@@ -56,8 +46,7 @@ export async function GET(
   { params }: Params
 ) {
   try {
-    const user =
-      await getSuperAdmin();
+    const user = await getSuperAdmin();
 
     if (!user) {
       return NextResponse.json(
@@ -66,39 +55,30 @@ export async function GET(
       );
     }
 
-    const { id } =
-      await params;
+    const { id } = await params;
 
-    const school =
-      await prisma.school.findUnique({
-        where: {
-          id,
-        },
-      });
+    const school = await prisma.school.findUnique({
+      where: {
+        id,
+      },
+    });
 
     if (!school) {
       return NextResponse.json(
         {
-          error:
-            "School not found",
+          error: "School not found",
         },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(
-      school
-    );
+    return NextResponse.json(school);
   } catch (error) {
-    console.error(
-      "GET SCHOOL ERROR:",
-      error
-    );
+    console.error("GET SCHOOL ERROR:", error);
 
     return NextResponse.json(
       {
-        error:
-          "Failed to load school",
+        error: "Failed to load school",
       },
       { status: 500 }
     );
@@ -110,8 +90,7 @@ export async function PATCH(
   { params }: Params
 ) {
   try {
-    const user =
-      await getSuperAdmin();
+    const user = await getSuperAdmin();
 
     if (!user) {
       return NextResponse.json(
@@ -120,28 +99,24 @@ export async function PATCH(
       );
     }
 
-    const { id } =
-      await params;
+    const { id } = await params;
 
-    const existingSchool =
-      await prisma.school.findUnique({
-        where: {
-          id,
-        },
-      });
+    const existingSchool = await prisma.school.findUnique({
+      where: {
+        id,
+      },
+    });
 
     if (!existingSchool) {
       return NextResponse.json(
         {
-          error:
-            "School not found",
+          error: "School not found",
         },
         { status: 404 }
       );
     }
 
-    const body =
-      await request.json();
+    const body = await request.json();
 
     const name =
       typeof body.name === "string"
@@ -156,102 +131,172 @@ export async function PATCH(
     if (!name || !slug) {
       return NextResponse.json(
         {
-          error:
-            "School name and slug are required.",
+          error: "School name and slug are required.",
         },
         { status: 400 }
       );
     }
 
-    const duplicate =
-      await prisma.school.findFirst({
-        where: {
-          slug,
-          NOT: {
-            id,
-          },
+    const duplicate = await prisma.school.findFirst({
+      where: {
+        slug,
+        NOT: {
+          id,
         },
-      });
+      },
+    });
 
     if (duplicate) {
       return NextResponse.json(
         {
-          error:
-            "Another school already uses this slug.",
+          error: "Another school already uses this slug.",
         },
         { status: 409 }
       );
     }
 
-    const school =
-      await prisma.school.update({
-        where: {
-          id,
-        },
-        data: {
-          name,
-          slug,
-          email:
-            typeof body.email === "string" &&
-            body.email.trim()
-              ? body.email.trim()
-              : null,
-          phone:
-            typeof body.phone === "string" &&
-            body.phone.trim()
-              ? body.phone.trim()
-              : null,
-          address:
-            typeof body.address === "string" &&
-            body.address.trim()
-              ? body.address.trim()
-              : null,
-          logo:
-            typeof body.logo === "string" &&
-            body.logo.trim()
-              ? body.logo.trim()
-              : null,
-          description:
-            typeof body.description === "string" &&
-            body.description.trim()
-              ? body.description.trim()
-              : null,
-          primaryColor:
-            typeof body.primaryColor === "string" &&
-            body.primaryColor.trim()
-              ? body.primaryColor.trim()
-              : null,
-          secondaryColor:
-            typeof body.secondaryColor === "string" &&
-            body.secondaryColor.trim()
-              ? body.secondaryColor.trim()
-              : null,
-          websiteEnabled:
-            typeof body.websiteEnabled ===
-            "boolean"
-              ? body.websiteEnabled
-              : existingSchool.websiteEnabled,
-          admissionsEnabled:
-            typeof body.admissionsEnabled ===
-            "boolean"
-              ? body.admissionsEnabled
-              : existingSchool.admissionsEnabled,
-        },
-      });
+    const school = await prisma.school.update({
+      where: {
+        id,
+      },
+      data: {
+        name,
+        slug,
+        email:
+          typeof body.email === "string" &&
+          body.email.trim()
+            ? body.email.trim()
+            : null,
+        phone:
+          typeof body.phone === "string" &&
+          body.phone.trim()
+            ? body.phone.trim()
+            : null,
+        address:
+          typeof body.address === "string" &&
+          body.address.trim()
+            ? body.address.trim()
+            : null,
+        logo:
+          typeof body.logo === "string" &&
+          body.logo.trim()
+            ? body.logo.trim()
+            : null,
+        description:
+          typeof body.description === "string" &&
+          body.description.trim()
+            ? body.description.trim()
+            : null,
+        primaryColor:
+          typeof body.primaryColor === "string" &&
+          body.primaryColor.trim()
+            ? body.primaryColor.trim()
+            : null,
+        secondaryColor:
+          typeof body.secondaryColor === "string" &&
+          body.secondaryColor.trim()
+            ? body.secondaryColor.trim()
+            : null,
+        websiteEnabled:
+          typeof body.websiteEnabled === "boolean"
+            ? body.websiteEnabled
+            : existingSchool.websiteEnabled,
+        admissionsEnabled:
+          typeof body.admissionsEnabled === "boolean"
+            ? body.admissionsEnabled
+            : existingSchool.admissionsEnabled,
+      },
+    });
+
+    return NextResponse.json(school);
+  } catch (error) {
+    console.error("UPDATE SCHOOL ERROR:", error);
 
     return NextResponse.json(
-      school
+      {
+        error: "Failed to update school",
+      },
+      { status: 500 }
     );
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: Params
+) {
+  try {
+    const user = await getSuperAdmin();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "Forbidden." },
+        { status: 403 }
+      );
+    }
+
+    const { id } = await params;
+
+    const school = await prisma.school.findUnique({
+      where: {
+        id,
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
+    if (!school) {
+      return NextResponse.json(
+        {
+          error: "School not found.",
+        },
+        { status: 404 }
+      );
+    }
+
+    /*
+     * Extra protection:
+     * Require the school name to be supplied in the request body.
+     * The frontend will send the exact school name after the user
+     * confirms the deletion.
+     */
+    let body: { confirmation?: string } = {};
+
+    try {
+      body = await request.json();
+    } catch {
+      body = {};
+    }
+
+    if (body.confirmation !== school.name) {
+      return NextResponse.json(
+        {
+          error:
+            "School name confirmation does not match.",
+        },
+        { status: 400 }
+      );
+    }
+
+    await prisma.school.delete({
+      where: {
+        id,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `${school.name} was deleted successfully.`,
+    });
   } catch (error) {
-    console.error(
-      "UPDATE SCHOOL ERROR:",
-      error
-    );
+    console.error("DELETE SCHOOL ERROR:", error);
 
     return NextResponse.json(
       {
         error:
-          "Failed to update school",
+          "Failed to delete school. Make sure all school relationships support cascading deletion.",
       },
       { status: 500 }
     );
