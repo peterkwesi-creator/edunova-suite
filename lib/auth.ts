@@ -1,3 +1,4 @@
+
 import {
   createHmac,
   randomBytes,
@@ -14,6 +15,7 @@ export type SessionUser = {
 };
 
 const SESSION_COOKIE = "edunova_session";
+const LEGACY_FIXED_SALT = "edunova-password-salt";
 
 function getSecret() {
   const secret = process.env.AUTH_SECRET;
@@ -26,7 +28,7 @@ function getSecret() {
 }
 
 function getLegacySalt() {
-  return process.env.PASSWORD_SALT || "edunova-password-salt";
+  return process.env.PASSWORD_SALT || LEGACY_FIXED_SALT;
 }
 
 function sign(payload: string) {
@@ -58,13 +60,11 @@ export function verifySession(
     if (!encoded || !signature) return null;
 
     const expectedSignature = sign(encoded);
+    const actual = Buffer.from(signature);
+    const expected = Buffer.from(expectedSignature);
 
-    const a = Buffer.from(signature);
-    const b = Buffer.from(expectedSignature);
-
-    if (a.length !== b.length) return null;
-
-    if (!timingSafeEqual(a, b)) return null;
+    if (actual.length !== expected.length) return null;
+    if (!timingSafeEqual(actual, expected)) return null;
 
     const session = JSON.parse(
       Buffer.from(encoded, "base64url").toString("utf8")
@@ -81,12 +81,7 @@ export function verifySession(
 }
 
 /**
- * Production password hashing.
- *
- * Format:
- * $scrypt$<salt>$<hash>
- *
- * A new random salt is generated for every password.
+ * Creates a modern scrypt password hash with a unique random salt.
  */
 export function hashPassword(password: string) {
   if (!password || password.length < 6) {
@@ -94,20 +89,15 @@ export function hashPassword(password: string) {
   }
 
   const salt = randomBytes(16).toString("hex");
-
   const derivedKey = scryptSync(password, salt, 64).toString("hex");
 
   return `$scrypt$${salt}$${derivedKey}`;
 }
 
 /**
- * Verifies both:
- *
- * 1. New production $scrypt$ passwords
- * 2. Old MVP passwords created with the legacy fixed salt
- *
- * This allows existing users to continue working while we upgrade
- * their passwords.
+ * Verifies modern salted scrypt hashes and legacy hashes.
+ * Legacy verification supports both the configured salt and the original
+ * fixed salt used by the earlier MVP implementation.
  */
 export function verifyPassword(
   password: string,
@@ -124,37 +114,42 @@ export function verifyPassword(
       const salt = parts[2];
       const storedHash = parts[3];
 
-      const derivedKey = scryptSync(
-        password,
-        salt,
-        64
-      ).toString("hex");
-
-      const a = Buffer.from(derivedKey, "hex");
-      const b = Buffer.from(storedHash, "hex");
-
-      if (a.length !== b.length) {
+      if (!/^[0-9a-f]+$/i.test(storedHash) || storedHash.length % 2 !== 0) {
         return false;
       }
 
-      return timingSafeEqual(a, b);
+      const actual = scryptSync(password, salt, 64);
+      const expected = Buffer.from(storedHash, "hex");
+
+      if (actual.length !== expected.length) {
+        return false;
+      }
+
+      return timingSafeEqual(actual, expected);
     }
 
-    // Legacy MVP password compatibility.
-    const legacyHash = scryptSync(
-      password,
-      getLegacySalt(),
-      64
-    ).toString("hex");
-
-    const a = Buffer.from(legacyHash, "hex");
-    const b = Buffer.from(passwordHash, "hex");
-
-    if (a.length !== b.length) {
+    if (!/^[0-9a-f]+$/i.test(passwordHash) || passwordHash.length % 2 !== 0) {
       return false;
     }
 
-    return timingSafeEqual(a, b);
+    const expected = Buffer.from(passwordHash, "hex");
+    const legacySalts = new Set([
+      getLegacySalt(),
+      LEGACY_FIXED_SALT,
+    ]);
+
+    for (const salt of legacySalts) {
+      const actual = scryptSync(password, salt, 64);
+
+      if (
+        actual.length === expected.length &&
+        timingSafeEqual(actual, expected)
+      ) {
+        return true;
+      }
+    }
+
+    return false;
   } catch {
     return false;
   }
