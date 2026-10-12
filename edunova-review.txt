@@ -1,0 +1,2111 @@
+EDUNOVA CODE REVIEW BUNDLE
+
+
+========== components\admin\Header.tsx ==========
+export default function Header() {
+  return (
+    <header className="bg-white shadow p-6 flex justify-between items-center">
+      <h2 className="text-2xl font-bold">Admin Dashboard</h2>
+
+      <div className="font-semibold">
+        Welcome, Admin
+      </div>
+    </header>
+  );
+}
+
+
+========== components\admin\Sidebar.tsx ==========
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
+
+const navigation = [
+  {
+    section: "OVERVIEW",
+    items: [
+      {
+        label: "Dashboard",
+        href: "/admin/dashboard",
+        icon: "⌂",
+      },
+      {
+        label: "Tasks",
+        href: "/admin/tasks",
+        icon: "✓",
+      },
+    ],
+  },
+  {
+    section: "ACADEMIC",
+    items: [
+      {
+        label: "Students",
+        href: "/admin/students",
+        icon: "🎓",
+      },
+      {
+        label: "Teachers",
+        href: "/admin/teachers",
+        icon: "👨‍🏫",
+      },
+      {
+        label: "Classes",
+        href: "/admin/classes",
+        icon: "🏫",
+      },
+      {
+        label: "Subjects",
+        href: "/admin/subjects",
+        icon: "📚",
+      },
+      {
+        label: "Class Subjects",
+        href: "/admin/class-subjects",
+        icon: "🔗",
+      },
+      {
+        label: "Academic Years",
+        href: "/admin/academic-years",
+        icon: "🗓️",
+      },
+      {
+        label: "Timetable",
+        href: "/admin/timetable",
+        icon: "📅",
+      },
+      {
+        label: "Assignments",
+        href: "/admin/assignments",
+        icon: "📝",
+      },
+      {
+        label: "Attendance",
+        href: "/admin/attendance",
+        icon: "✓",
+      },
+      {
+        label: "Report Card",
+        href: "/admin/report-card",
+        icon: "📊",
+      },
+    ],
+  },
+  {
+    section: "STUDENTS & PARENTS",
+    items: [
+      {
+        label: "Parents",
+        href: "/admin/parents",
+        icon: "👨‍👩‍👧",
+      },
+      {
+        label: "Student Assignments",
+        href: "/admin/student-assignments",
+        icon: "📋",
+      },
+      {
+        label: "Fees",
+        href: "/admin/fees",
+        icon: "💰",
+      },
+    ],
+  },
+  {
+    section: "MANAGEMENT",
+    items: [
+      {
+        label: "Accounting",
+        href: "/admin/accounting",
+        icon: "💵",
+      },
+      {
+        label: "News",
+        href: "/admin/news",
+        icon: "📰",
+      },
+      {
+        label: "Contact Messages",
+        href: "/admin/contact-messages",
+        icon: "✉",
+      },
+      {
+        label: "Schools",
+        href: "/admin/schools",
+        icon: "🏢",
+      },
+      {
+        label: "Users",
+        href: "/admin/users",
+        icon: "👥",
+      },
+      {
+        label: "Website",
+        href: "/admin/website",
+        icon: "🌐",
+      },
+      {
+        label: "Settings",
+        href: "/admin/settings",
+        icon: "⚙",
+      },
+    ],
+  },
+];
+
+function NavigationContent({
+  pathname,
+  onNavigate,
+}: {
+  pathname: string;
+  onNavigate?: () => void;
+}) {
+  return (
+    <nav className="flex-1 overflow-y-auto px-4 py-6">
+      {navigation.map((group) => (
+        <div key={group.section} className="mb-8">
+          <p className="mb-4 px-3 text-xs font-semibold tracking-wide text-gray-400">
+            {group.section}
+          </p>
+
+          <div className="space-y-1">
+            {group.items.map((item) => {
+              const active =
+                pathname === item.href ||
+                pathname.startsWith(`${item.href}/`);
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onNavigate}
+                  className={`flex items-center gap-4 rounded-xl px-3 py-3 text-sm font-medium transition ${
+                    active
+                      ? "bg-blue-50 text-blue-600"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  }`}
+                >
+                  <span className="flex w-5 justify-center text-base">
+                    {item.icon}
+                  </span>
+
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </nav>
+  );
+}
+
+export default function Sidebar() {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <aside className="hidden h-screen w-72 shrink-0 flex-col border-r border-gray-200 bg-white md:flex">
+        <div className="border-b border-gray-200 px-6 py-6">
+          <h1 className="text-xl font-extrabold tracking-tight text-gray-900">
+            EduNova Suite
+          </h1>
+
+          <p className="mt-1 text-sm text-gray-500">
+            Administrator Portal
+          </p>
+        </div>
+
+        <NavigationContent pathname={pathname} />
+
+        <div className="border-t border-gray-200 px-4 py-5">
+          <Link
+            href="/"
+            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+          >
+            <span>←</span>
+            <span>School Website</span>
+          </Link>
+        </div>
+      </aside>
+
+      {/* Mobile hamburger */}
+      <button
+        type="button"
+        aria-label="Open admin navigation"
+        onClick={() => setOpen(true)}
+        className="fixed left-4 top-4 z-40 flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 bg-white text-xl text-gray-700 shadow-md md:hidden"
+      >
+        ☰
+      </button>
+
+      {/* Mobile overlay */}
+      {open && (
+        <button
+          type="button"
+          aria-label="Close navigation overlay"
+          onClick={() => setOpen(false)}
+          className="fixed inset-0 z-40 bg-black/40 md:hidden"
+        />
+      )}
+
+      {/* Mobile drawer */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-white shadow-2xl transition-transform duration-200 md:hidden ${
+          open ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-6">
+          <div>
+            <h1 className="text-xl font-extrabold tracking-tight text-gray-900">
+              EduNova Suite
+            </h1>
+
+            <p className="mt-1 text-sm text-gray-500">
+              Administrator Portal
+            </p>
+          </div>
+
+          <button
+            type="button"
+            aria-label="Close admin navigation"
+            onClick={() => setOpen(false)}
+            className="flex h-10 w-10 items-center justify-center rounded-xl text-2xl text-gray-500 hover:bg-gray-100"
+          >
+            ×
+          </button>
+        </div>
+
+        <NavigationContent
+          pathname={pathname}
+          onNavigate={() => setOpen(false)}
+        />
+
+        <div className="border-t border-gray-200 px-4 py-5">
+          <Link
+            href="/"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+          >
+            <span>←</span>
+            <span>School Website</span>
+          </Link>
+        </div>
+      </aside>
+    </>
+  );
+}
+
+
+========== components\layout\Navbar.tsx ==========
+"use client";
+
+import Link from "next/link";
+import { useState } from "react";
+
+const navigation = [
+  {
+    name: "Home",
+    href: "/",
+  },
+  {
+    name: "About",
+    href: "/about",
+  },
+  {
+    name: "Academics",
+    href: "/academics",
+  },
+  {
+    name: "Admissions",
+    href: "/admissions",
+  },
+  {
+    name: "Gallery",
+    href: "/gallery",
+  },
+  {
+    name: "News",
+    href: "/news",
+  },
+  {
+    name: "Contact",
+    href: "/contact",
+  },
+];
+
+export default function Navbar() {
+  const [menuOpen, setMenuOpen] =
+    useState(false);
+
+  function closeMenu() {
+    setMenuOpen(false);
+  }
+
+  return (
+    <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/95 shadow-sm backdrop-blur">
+      <div className="mx-auto max-w-7xl px-5">
+        <div className="flex h-20 items-center justify-between">
+          {/* LOGO */}
+          <Link
+            href="/"
+            onClick={closeMenu}
+            className="flex items-center gap-3"
+          >
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 text-lg font-extrabold text-white shadow-sm">
+              E
+            </div>
+
+            <div>
+              <div className="text-xl font-extrabold tracking-tight text-blue-600">
+                EduNova
+              </div>
+
+              <div className="hidden text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-400 sm:block">
+                Modern School Platform
+              </div>
+            </div>
+          </Link>
+
+          {/* DESKTOP NAVIGATION */}
+          <nav className="hidden items-center gap-1 lg:flex">
+            {navigation.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="rounded-lg px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-blue-50 hover:text-blue-600"
+              >
+                {item.name}
+              </Link>
+            ))}
+          </nav>
+
+          {/* DESKTOP ACTIONS */}
+          <div className="hidden items-center gap-3 lg:flex">
+            <Link
+              href="/login"
+              className="rounded-lg px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-100"
+            >
+              Login
+            </Link>
+
+            <Link
+              href="/admissions"
+              className="rounded-lg bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 hover:shadow-md"
+            >
+              Apply Now
+            </Link>
+          </div>
+
+          {/* MOBILE MENU BUTTON */}
+          <button
+            type="button"
+            aria-label={
+              menuOpen
+                ? "Close navigation menu"
+                : "Open navigation menu"
+            }
+            aria-expanded={menuOpen}
+            onClick={() =>
+              setMenuOpen(!menuOpen)
+            }
+            className="flex h-11 w-11 items-center justify-center rounded-lg border border-gray-200 text-gray-700 transition hover:bg-gray-100 lg:hidden"
+          >
+            {menuOpen ? (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            ) : (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            )}
+          </button>
+        </div>
+
+        {/* MOBILE NAVIGATION */}
+        {menuOpen && (
+          <div className="border-t border-gray-100 py-4 lg:hidden">
+            <nav className="flex flex-col gap-1">
+              {navigation.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={closeMenu}
+                  className="rounded-lg px-4 py-3 text-base font-medium text-gray-700 transition hover:bg-blue-50 hover:text-blue-600"
+                >
+                  {item.name}
+                </Link>
+              ))}
+
+              <div className="mt-3 grid grid-cols-2 gap-3 border-t border-gray-100 pt-4">
+                <Link
+                  href="/login"
+                  onClick={closeMenu}
+                  className="rounded-lg border border-gray-200 px-4 py-3 text-center text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                >
+                  Login
+                </Link>
+
+                <Link
+                  href="/admissions"
+                  onClick={closeMenu}
+                  className="rounded-lg bg-blue-600 px-4 py-3 text-center text-sm font-bold text-white transition hover:bg-blue-700"
+                >
+                  Apply Now
+                </Link>
+              </div>
+            </nav>
+          </div>
+        )}
+      </div>
+    </header>
+  );
+}
+
+
+========== components\parent\ParentSidebar.tsx ==========
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+
+const navigation = [
+  {
+    section: "OVERVIEW",
+    items: [
+      {
+        label: "Dashboard",
+        href: "/parent/dashboard",
+        icon: "⌂",
+      },
+    ],
+  },
+  {
+    section: "MY CHILDREN",
+    items: [
+      {
+        label: "My Children",
+        href: "/parent/children",
+        icon: "CH",
+      },
+      {
+        label: "Results",
+        href: "/parent/results",
+        icon: "RG",
+      },
+      {
+        label: "Assignments",
+        href: "/parent/assignments",
+        icon: "AS",
+      },
+      {
+        label: "Attendance",
+        href: "/parent/attendance",
+        icon: "AT",
+      },
+      {
+        label: "Fees",
+        href: "/parent/fees",
+        icon: "FE",
+      },
+      {
+        label: "Timetable",
+        href: "/parent/timetable",
+        icon: "TT",
+      },
+    ],
+  },
+];
+
+function NavigationContent({
+  pathname,
+  onNavigate,
+}: {
+  pathname: string;
+  onNavigate?: () => void;
+}) {
+  return (
+    <nav
+      aria-label="Parent navigation"
+      className="flex-1 overflow-y-auto px-4 py-6"
+    >
+      {navigation.map((group) => (
+        <div key={group.section} className="mb-8">
+          <p className="mb-4 px-3 text-xs font-semibold tracking-wide text-gray-400">
+            {group.section}
+          </p>
+
+          <div className="space-y-1">
+            {group.items.map((item) => {
+              const active =
+                pathname === item.href ||
+                pathname.startsWith(`${item.href}/`);
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onNavigate}
+                  className={`flex min-h-11 items-center gap-4 rounded-xl px-3 py-3 text-sm font-semibold transition ${
+                    active
+                      ? "bg-blue-50 text-blue-600"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  }`}
+                >
+                  <span
+                    aria-hidden="true"
+                    className="flex h-6 w-7 shrink-0 items-center justify-center rounded-md bg-gray-100 text-[10px] font-bold text-gray-500"
+                  >
+                    {item.icon}
+                  </span>
+
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </nav>
+  );
+}
+
+export default function ParentSidebar() {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!open) {
+      document.body.style.overflow = "";
+      return;
+    }
+
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <aside className="hidden h-screen w-72 shrink-0 flex-col border-r border-gray-200 bg-white md:flex">
+        <div className="border-b border-gray-200 px-6 py-7">
+          <h1 className="text-2xl font-extrabold tracking-tight text-blue-600">
+            EduNova
+          </h1>
+
+          <p className="mt-1 text-sm text-gray-500">Parent Portal</p>
+        </div>
+
+        <NavigationContent pathname={pathname} />
+
+        <div className="border-t border-gray-200 px-4 py-5">
+          <Link
+            href="/"
+            className="flex min-h-11 items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+          >
+            <span aria-hidden="true">←</span>
+            <span>School Website</span>
+          </Link>
+        </div>
+      </aside>
+
+      {/* Mobile hamburger */}
+      <button
+        type="button"
+        aria-label="Open parent navigation"
+        aria-expanded={open}
+        onClick={() => setOpen(true)}
+        className="fixed left-4 top-4 z-40 flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 bg-white text-xl text-gray-700 shadow-md md:hidden"
+      >
+        ☰
+      </button>
+
+      {/* Mobile overlay */}
+      {open && (
+        <button
+          type="button"
+          aria-label="Close parent navigation overlay"
+          onClick={() => setOpen(false)}
+          className="fixed inset-0 z-40 bg-black/40 md:hidden"
+        />
+      )}
+
+      {/* Mobile drawer */}
+      <aside
+        aria-label="Mobile parent navigation"
+        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-white shadow-2xl transition-transform duration-200 md:hidden ${
+          open ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-6">
+          <div>
+            <h1 className="text-xl font-extrabold tracking-tight text-blue-600">
+              EduNova
+            </h1>
+
+            <p className="mt-1 text-sm text-gray-500">Parent Portal</p>
+          </div>
+
+          <button
+            type="button"
+            aria-label="Close parent navigation"
+            onClick={() => setOpen(false)}
+            className="flex h-10 w-10 items-center justify-center rounded-xl text-2xl text-gray-500 hover:bg-gray-100"
+          >
+            ×
+          </button>
+        </div>
+
+        <NavigationContent
+          pathname={pathname}
+          onNavigate={() => setOpen(false)}
+        />
+
+        <div className="border-t border-gray-200 px-4 py-5">
+          <Link
+            href="/"
+            onClick={() => setOpen(false)}
+            className="flex min-h-11 items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+          >
+            <span aria-hidden="true">←</span>
+            <span>School Website</span>
+          </Link>
+        </div>
+      </aside>
+    </>
+  );
+}
+
+
+========== components\student\StudentSidebar.tsx ==========
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+
+const navigation = [
+  {
+    section: "OVERVIEW",
+    items: [
+      {
+        label: "Dashboard",
+        href: "/student/dashboard",
+        icon: "⌂",
+      },
+    ],
+  },
+  {
+    section: "ACADEMIC",
+    items: [
+      {
+        label: "My Results",
+        href: "/student/results",
+        icon: "RG",
+      },
+      {
+        label: "Assignments",
+        href: "/student/assignments",
+        icon: "AS",
+      },
+      {
+        label: "Attendance",
+        href: "/student/attendance",
+        icon: "AT",
+      },
+      {
+        label: "Timetable",
+        href: "/student/timetable",
+        icon: "TT",
+      },
+      {
+        label: "My Notes",
+        href: "/student/notes",
+        icon: "NT",
+      },
+      {
+        label: "Result Projection",
+        href: "/student/projection",
+        icon: "PR",
+      },
+    ],
+  },
+];
+
+function NavigationContent({
+  pathname,
+  onNavigate,
+}: {
+  pathname: string;
+  onNavigate?: () => void;
+}) {
+  return (
+    <nav
+      aria-label="Student navigation"
+      className="flex-1 overflow-y-auto px-4 py-6"
+    >
+      {navigation.map((group) => (
+        <div key={group.section} className="mb-8">
+          <p className="mb-4 px-3 text-xs font-semibold tracking-wide text-gray-400">
+            {group.section}
+          </p>
+
+          <div className="space-y-1">
+            {group.items.map((item) => {
+              const active =
+                pathname === item.href ||
+                pathname.startsWith(`${item.href}/`);
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onNavigate}
+                  className={`flex min-h-11 items-center gap-4 rounded-xl px-3 py-3 text-sm font-semibold transition ${
+                    active
+                      ? "bg-blue-50 text-blue-600"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  }`}
+                >
+                  <span
+                    aria-hidden="true"
+                    className="flex h-6 w-7 shrink-0 items-center justify-center rounded-md bg-gray-100 text-[10px] font-bold text-gray-500"
+                  >
+                    {item.icon}
+                  </span>
+
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </nav>
+  );
+}
+
+export default function StudentSidebar() {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!open) {
+      document.body.style.overflow = "";
+      return;
+    }
+
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <aside className="hidden h-screen w-72 shrink-0 flex-col border-r border-gray-200 bg-white md:flex">
+        <div className="border-b border-gray-200 px-6 py-7">
+          <h1 className="text-2xl font-extrabold tracking-tight text-blue-600">
+            EduNova
+          </h1>
+
+          <p className="mt-1 text-sm text-gray-500">Student Portal</p>
+        </div>
+
+        <NavigationContent pathname={pathname} />
+
+        <div className="border-t border-gray-200 px-4 py-5">
+          <Link
+            href="/"
+            className="flex min-h-11 items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+          >
+            <span aria-hidden="true">←</span>
+            <span>School Website</span>
+          </Link>
+        </div>
+      </aside>
+
+      {/* Mobile hamburger */}
+      <button
+        type="button"
+        aria-label="Open student navigation"
+        aria-expanded={open}
+        onClick={() => setOpen(true)}
+        className="fixed left-4 top-4 z-40 flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 bg-white text-xl text-gray-700 shadow-md md:hidden"
+      >
+        ☰
+      </button>
+
+      {/* Mobile overlay */}
+      {open && (
+        <button
+          type="button"
+          aria-label="Close student navigation overlay"
+          onClick={() => setOpen(false)}
+          className="fixed inset-0 z-40 bg-black/40 md:hidden"
+        />
+      )}
+
+      {/* Mobile drawer */}
+      <aside
+        aria-label="Mobile student navigation"
+        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-white shadow-2xl transition-transform duration-200 md:hidden ${
+          open ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-6">
+          <div>
+            <h1 className="text-xl font-extrabold tracking-tight text-blue-600">
+              EduNova
+            </h1>
+
+            <p className="mt-1 text-sm text-gray-500">Student Portal</p>
+          </div>
+
+          <button
+            type="button"
+            aria-label="Close student navigation"
+            onClick={() => setOpen(false)}
+            className="flex h-10 w-10 items-center justify-center rounded-xl text-2xl text-gray-500 hover:bg-gray-100"
+          >
+            ×
+          </button>
+        </div>
+
+        <NavigationContent
+          pathname={pathname}
+          onNavigate={() => setOpen(false)}
+        />
+
+        <div className="border-t border-gray-200 px-4 py-5">
+          <Link
+            href="/"
+            onClick={() => setOpen(false)}
+            className="flex min-h-11 items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+          >
+            <span aria-hidden="true">←</span>
+            <span>School Website</span>
+          </Link>
+        </div>
+      </aside>
+    </>
+  );
+}
+
+
+========== components\teacher\TeacherSidebar.tsx ==========
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+
+const navigation = [
+  {
+    section: "OVERVIEW",
+    items: [
+      {
+        label: "Dashboard",
+        href: "/teacher/dashboard",
+        icon: "⌂",
+      },
+    ],
+  },
+  {
+    section: "TEACHING",
+    items: [
+      {
+        label: "My Students",
+        href: "/teacher/students",
+        icon: "ST",
+      },
+      {
+        label: "My Results",
+        href: "/teacher/results",
+        icon: "RG",
+      },
+      {
+        label: "Assignments",
+        href: "/teacher/assignments",
+        icon: "AS",
+      },
+      {
+        label: "Attendance",
+        href: "/teacher/attendance",
+        icon: "AT",
+      },
+      {
+        label: "Timetable",
+        href: "/teacher/timetable",
+        icon: "TT",
+      },
+      {
+        label: "Notes",
+        href: "/teacher/notes",
+        icon: "NT",
+      },
+      {
+        label: "Tasks",
+        href: "/teacher/tasks",
+        icon: "TK",
+      },
+    ],
+  },
+];
+
+function NavigationContent({
+  pathname,
+  onNavigate,
+}: {
+  pathname: string;
+  onNavigate?: () => void;
+}) {
+  return (
+    <nav
+      aria-label="Teacher navigation"
+      className="flex-1 overflow-y-auto px-4 py-6"
+    >
+      {navigation.map((group) => (
+        <div key={group.section} className="mb-8">
+          <p className="mb-4 px-3 text-xs font-semibold tracking-wide text-gray-400">
+            {group.section}
+          </p>
+
+          <div className="space-y-1">
+            {group.items.map((item) => {
+              const active =
+                pathname === item.href ||
+                pathname.startsWith(`${item.href}/`);
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onNavigate}
+                  className={`flex min-h-11 items-center gap-4 rounded-xl px-3 py-3 text-sm font-semibold transition ${
+                    active
+                      ? "bg-blue-50 text-blue-600"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  }`}
+                >
+                  <span
+                    aria-hidden="true"
+                    className="flex h-6 w-7 shrink-0 items-center justify-center rounded-md bg-gray-100 text-[10px] font-bold text-gray-500"
+                  >
+                    {item.icon}
+                  </span>
+
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </nav>
+  );
+}
+
+export default function TeacherSidebar() {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!open) {
+      document.body.style.overflow = "";
+      return;
+    }
+
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <aside className="hidden h-screen w-72 shrink-0 flex-col border-r border-gray-200 bg-white md:flex">
+        <div className="border-b border-gray-200 px-6 py-7">
+          <h1 className="text-2xl font-extrabold tracking-tight text-blue-600">
+            EduNova
+          </h1>
+
+          <p className="mt-1 text-sm text-gray-500">Teacher Portal</p>
+        </div>
+
+        <NavigationContent pathname={pathname} />
+
+        <div className="border-t border-gray-200 px-4 py-5">
+          <Link
+            href="/"
+            className="flex min-h-11 items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+          >
+            <span aria-hidden="true">←</span>
+            <span>School Website</span>
+          </Link>
+        </div>
+      </aside>
+
+      {/* Mobile hamburger */}
+      <button
+        type="button"
+        aria-label="Open teacher navigation"
+        aria-expanded={open}
+        onClick={() => setOpen(true)}
+        className="fixed left-4 top-4 z-40 flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 bg-white text-xl text-gray-700 shadow-md md:hidden"
+      >
+        ☰
+      </button>
+
+      {/* Mobile overlay */}
+      {open && (
+        <button
+          type="button"
+          aria-label="Close teacher navigation overlay"
+          onClick={() => setOpen(false)}
+          className="fixed inset-0 z-40 bg-black/40 md:hidden"
+        />
+      )}
+
+      {/* Mobile drawer */}
+      <aside
+        aria-label="Mobile teacher navigation"
+        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-white shadow-2xl transition-transform duration-200 md:hidden ${
+          open ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-6">
+          <div>
+            <h1 className="text-xl font-extrabold tracking-tight text-blue-600">
+              EduNova
+            </h1>
+
+            <p className="mt-1 text-sm text-gray-500">Teacher Portal</p>
+          </div>
+
+          <button
+            type="button"
+            aria-label="Close teacher navigation"
+            onClick={() => setOpen(false)}
+            className="flex h-10 w-10 items-center justify-center rounded-xl text-2xl text-gray-500 hover:bg-gray-100"
+          >
+            ×
+          </button>
+        </div>
+
+        <NavigationContent
+          pathname={pathname}
+          onNavigate={() => setOpen(false)}
+        />
+
+        <div className="border-t border-gray-200 px-4 py-5">
+          <Link
+            href="/"
+            onClick={() => setOpen(false)}
+            className="flex min-h-11 items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+          >
+            <span aria-hidden="true">←</span>
+            <span>School Website</span>
+          </Link>
+        </div>
+      </aside>
+    </>
+  );
+}
+
+
+========== app\(admin)\admin\layout.tsx ==========
+import Sidebar from "@/components/admin/Sidebar";
+import Header from "@/components/admin/Header";
+
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex min-h-screen bg-gray-100">
+      <Sidebar />
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <Header />
+
+        <main className="flex-1 p-8">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+
+========== app\parent\layout.tsx ==========
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import ParentSidebar from "@/components/parent/ParentSidebar";
+import { SESSION_COOKIE, verifySession } from "@/lib/auth";
+
+export default async function ParentLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE)?.value;
+
+  const session = verifySession(token);
+
+  if (!session || session.role !== "PARENT") {
+    redirect("/login");
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="flex min-h-screen">
+        <ParentSidebar />
+
+        <main className="min-w-0 flex-1">
+          <div className="p-4 md:p-6 lg:p-8">
+            {children}
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+
+========== app\student\layout.tsx ==========
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import StudentSidebar from "@/components/student/StudentSidebar";
+import { SESSION_COOKIE, verifySession } from "@/lib/auth";
+
+export default async function StudentLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE)?.value;
+
+  const session = verifySession(token);
+
+  if (!session || session.role !== "STUDENT") {
+    redirect("/login");
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="flex min-h-screen">
+        <StudentSidebar />
+
+        <main className="min-w-0 flex-1">
+          <div className="p-4 md:p-6 lg:p-8">
+            {children}
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+
+========== app\teacher\layout.tsx ==========
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import TeacherSidebar from "@/components/teacher/TeacherSidebar";
+import { SESSION_COOKIE, verifySession } from "@/lib/auth";
+
+export default async function TeacherLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE)?.value;
+
+  const session = verifySession(token);
+
+  if (!session || session.role !== "TEACHER") {
+    redirect("/login");
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="flex min-h-screen">
+        <TeacherSidebar />
+
+        <main className="min-w-0 flex-1">
+          <div className="p-4 md:p-6 lg:p-8">
+            {children}
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+
+========== app\(website)\layout.tsx ==========
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
+
+export default function WebsiteLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <>
+      <Navbar />
+      {children}
+      <Footer />
+    </>
+  );
+}
+
+
+========== lib\auth.ts ==========
+
+import {
+  createHmac,
+  randomBytes,
+  scryptSync,
+  timingSafeEqual,
+} from "crypto";
+
+export type SessionUser = {
+  userId: string;
+  email: string;
+  role: "SUPER_ADMIN" | "ADMIN" | "TEACHER" | "STUDENT" | "PARENT";
+  schoolId: string;
+  exp: number;
+};
+
+const SESSION_COOKIE = "edunova_session";
+const LEGACY_FIXED_SALT = "edunova-password-salt";
+
+function getSecret() {
+  const secret = process.env.AUTH_SECRET;
+
+  if (!secret) {
+    throw new Error("AUTH_SECRET is missing from environment variables.");
+  }
+
+  return secret;
+}
+
+function getLegacySalt() {
+  return process.env.PASSWORD_SALT || LEGACY_FIXED_SALT;
+}
+
+function sign(payload: string) {
+  return createHmac("sha256", getSecret())
+    .update(payload)
+    .digest("base64url");
+}
+
+export function createSession(user: Omit<SessionUser, "exp">) {
+  const payload: SessionUser = {
+    ...user,
+    exp: Date.now() + 24 * 60 * 60 * 1000,
+  };
+
+  const encoded = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const signature = sign(encoded);
+
+  return `${encoded}.${signature}`;
+}
+
+export function verifySession(
+  token: string | undefined
+): SessionUser | null {
+  if (!token) return null;
+
+  try {
+    const [encoded, signature] = token.split(".");
+
+    if (!encoded || !signature) return null;
+
+    const expectedSignature = sign(encoded);
+    const actual = Buffer.from(signature);
+    const expected = Buffer.from(expectedSignature);
+
+    if (actual.length !== expected.length) return null;
+    if (!timingSafeEqual(actual, expected)) return null;
+
+    const session = JSON.parse(
+      Buffer.from(encoded, "base64url").toString("utf8")
+    ) as SessionUser;
+
+    if (!session.exp || session.exp < Date.now()) {
+      return null;
+    }
+
+    return session;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Creates a modern scrypt password hash with a unique random salt.
+ */
+export function hashPassword(password: string) {
+  if (!password || password.length < 6) {
+    throw new Error("Password must be at least 6 characters.");
+  }
+
+  const salt = randomBytes(16).toString("hex");
+  const derivedKey = scryptSync(password, salt, 64).toString("hex");
+
+  return `$scrypt$${salt}$${derivedKey}`;
+}
+
+/**
+ * Verifies modern salted scrypt hashes and legacy hashes.
+ * Legacy verification supports both the configured salt and the original
+ * fixed salt used by the earlier MVP implementation.
+ */
+export function verifyPassword(
+  password: string,
+  passwordHash: string
+) {
+  try {
+    if (passwordHash.startsWith("$scrypt$")) {
+      const parts = passwordHash.split("$");
+
+      if (parts.length !== 4) {
+        return false;
+      }
+
+      const salt = parts[2];
+      const storedHash = parts[3];
+
+      if (!/^[0-9a-f]+$/i.test(storedHash) || storedHash.length % 2 !== 0) {
+        return false;
+      }
+
+      const actual = scryptSync(password, salt, 64);
+      const expected = Buffer.from(storedHash, "hex");
+
+      if (actual.length !== expected.length) {
+        return false;
+      }
+
+      return timingSafeEqual(actual, expected);
+    }
+
+    if (!/^[0-9a-f]+$/i.test(passwordHash) || passwordHash.length % 2 !== 0) {
+      return false;
+    }
+
+    const expected = Buffer.from(passwordHash, "hex");
+    const legacySalts = new Set([
+      getLegacySalt(),
+      LEGACY_FIXED_SALT,
+    ]);
+
+    for (const salt of legacySalts) {
+      const actual = scryptSync(password, salt, 64);
+
+      if (
+        actual.length === expected.length &&
+        timingSafeEqual(actual, expected)
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+export { SESSION_COOKIE };
+
+
+========== lib\website.ts ==========
+import { prisma } from "@/lib/prisma";
+
+export type WebsiteContent = Record<string, string>;
+
+export async function getSchool() {
+  return prisma.school.findFirst({
+    orderBy: {
+      createdAt: "asc",
+    },
+  });
+}
+
+export async function getWebsitePage(slug: string) {
+  const school = await getSchool();
+
+  if (!school) {
+    return {
+      school: null,
+      page: null,
+      content: {} as WebsiteContent,
+    };
+  }
+
+  const page = await prisma.websitePage.findUnique({
+    where: {
+      schoolId_slug: {
+        schoolId: school.id,
+        slug,
+      },
+    },
+  });
+
+  const content =
+    page?.content &&
+    typeof page.content === "object" &&
+    !Array.isArray(page.content)
+      ? (page.content as WebsiteContent)
+      : ({} as WebsiteContent);
+
+  return {
+    school,
+    page,
+    content,
+  };
+}
+
+
+========== prisma\schema.prisma ==========
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model School {
+  id                String            @id @default(cuid())
+  name              String
+  slug              String            @unique
+  email             String?
+  phone             String?
+  address           String?
+  logo              String?
+  description       String?
+  primaryColor      String?
+  secondaryColor    String?
+  websiteEnabled    Boolean           @default(true)
+  admissionsEnabled Boolean           @default(true)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  academicYears     AcademicYear[]
+  accountingEntries AccountingEntry[]
+  attendance        Attendance[]
+  contactMessages   ContactMessage[]
+  fees              Fee[]
+  galleryItems      GalleryItem[]
+  news              NewsItem[]
+  parents           Parent[]
+  reportCardInfos   ReportCardInfo[]
+  classes           SchoolClass[]
+  socialLinks       SocialLink[]
+  staffTasks        StaffTask[]
+  students          Student[]
+  studentNotes      StudentNote[]
+  subjects          Subject[]
+  teachers          Teacher[]
+  timetableEntries  TimetableEntry[]
+  users             User[]
+  websitePages      WebsitePage[]
+}
+
+model User {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  role         UserRole      @default(STUDENT)
+  schoolId     String
+  active       Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  parentId     String?       @unique
+  studentId    String?       @unique
+  teacherId    String?       @unique
+  staffTasks   StaffTask[]
+  studentNotes StudentNote[]
+  parent       Parent?       @relation(fields: [parentId], references: [id])
+  school       School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student      Student?      @relation(fields: [studentId], references: [id])
+  teacher      Teacher?      @relation(fields: [teacherId], references: [id])
+
+  @@index([schoolId])
+  @@index([role])
+}
+
+model Student {
+  id              String           @id @default(cuid())
+  studentNumber   String           @unique
+  firstName       String
+  lastName        String
+  gender          String
+  dateOfBirth     DateTime?
+  phone           String?
+  email           String?
+  address         String?
+  guardianName    String?
+  guardianPhone   String?
+  classId         String?
+  schoolId        String
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  photoUrl        String?
+  attendance      Attendance[]
+  fees            Fee[]
+  wards           ParentStudent[]
+  payments        Payment[]
+  reportCardInfos ReportCardInfo[]
+  results         Result[]
+  class           SchoolClass?     @relation(fields: [classId], references: [id])
+  school          School           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  notes           StudentNote[]
+  submissions     Submission[]
+  user            User?
+
+  @@index([schoolId])
+  @@index([classId])
+}
+
+model Teacher {
+  id               String           @id @default(cuid())
+  employeeNumber   String           @unique
+  firstName        String
+  lastName         String
+  gender           String
+  phone            String
+  email            String?
+  address          String?
+  qualification    String?
+  specialization   String?
+  schoolId         String
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  position         String?
+  photoUrl         String?
+  assignments      Assignment[]
+  ClassSubject     ClassSubject[]
+  results          Result[]
+  school           School           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  timetableEntries TimetableEntry[]
+  user             User?
+
+  @@index([schoolId])
+}
+
+model Parent {
+  id        String          @id @default(cuid())
+  firstName String
+  lastName  String
+  phone     String?
+  email     String?
+  address   String?
+  schoolId  String
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  school    School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  children  ParentStudent[]
+  user      User?
+
+  @@index([schoolId])
+}
+
+model ParentStudent {
+  id           String   @id @default(cuid())
+  parentId     String
+  studentId    String
+  relationship String?
+  isPrimary    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  parent       Parent   @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  student      Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([parentId, studentId])
+  @@index([parentId])
+  @@index([studentId])
+}
+
+model SchoolClass {
+  id               String           @id @default(cuid())
+  name             String
+  description      String?
+  schoolId         String
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  assignments      Assignment[]
+  attendance       Attendance[]
+  subjects         ClassSubject[]
+  fees             Fee[]
+  results          Result[]
+  school           School           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  students         Student[]
+  timetableEntries TimetableEntry[]
+
+  @@unique([schoolId, name])
+}
+
+model Subject {
+  id               String           @id @default(cuid())
+  name             String
+  code             String
+  description      String?
+  schoolId         String
+  assignments      Assignment[]
+  classes          ClassSubject[]
+  results          Result[]
+  school           School           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  timetableEntries TimetableEntry[]
+
+  @@unique([schoolId, code])
+}
+
+model ClassSubject {
+  id        String      @id @default(cuid())
+  classId   String
+  subjectId String
+  teacherId String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  class     SchoolClass @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subject   Subject     @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher   Teacher?    @relation(fields: [teacherId], references: [id])
+
+  @@unique([classId, subjectId])
+}
+
+model Assignment {
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  dueDate     DateTime?
+  classId     String
+  subjectId   String
+  teacherId   String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  class       SchoolClass  @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subject     Subject      @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher     Teacher      @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  submissions Submission[]
+}
+
+model Submission {
+  id           String     @id @default(cuid())
+  assignmentId String
+  studentId    String
+  answer       String
+  status       String     @default("SUBMITTED")
+  grade        Float?
+  feedback     String?
+  submittedAt  DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student      Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, studentId])
+}
+
+model Result {
+  id              String        @id @default(cuid())
+  studentId       String
+  classId         String
+  subjectId       String
+  teacherId       String?
+  assessmentScore Float?
+  examScore       Float?
+  totalScore      Float?
+  grade           String?
+  remark          String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  academicYearId  String?
+  termId          String?
+  academicYear    AcademicYear? @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  class           SchoolClass   @relation(fields: [classId], references: [id], onDelete: Cascade)
+  student         Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject         Subject       @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher         Teacher?      @relation(fields: [teacherId], references: [id])
+  term            Term?         @relation(fields: [termId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, subjectId, academicYearId, termId])
+  @@index([studentId])
+  @@index([classId])
+  @@index([subjectId])
+  @@index([teacherId])
+  @@index([academicYearId])
+  @@index([termId])
+}
+
+model GalleryItem {
+  id          String   @id @default(cuid())
+  schoolId    String
+  title       String?
+  description String?
+  imageUrl    String
+  published   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  sortOrder   Int      @default(0)
+  school      School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId])
+}
+
+model SocialLink {
+  id        String  @id @default(cuid())
+  schoolId  String
+  platform  String
+  url       String
+  label     String?
+  enabled   Boolean @default(true)
+  sortOrder Int     @default(0)
+  school    School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@unique([schoolId, platform])
+  @@index([schoolId])
+}
+
+model Fee {
+  id           String       @id @default(cuid())
+  title        String
+  description  String?
+  amount       Float
+  academicYear String
+  term         String
+  studentId    String
+  schoolId     String
+  classId      String?
+  dueDate      DateTime?
+  status       String       @default("UNPAID")
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  class        SchoolClass? @relation(fields: [classId], references: [id])
+  school       School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student      Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  payments     Payment[]
+
+  @@index([studentId])
+  @@index([schoolId])
+  @@index([classId])
+  @@index([academicYear])
+  @@index([term])
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  feeId     String
+  studentId String
+  amount    Float
+  reference String?
+  method    String   @default("CASH")
+  status    String   @default("COMPLETED")
+  paidAt    DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  fee       Fee      @relation(fields: [feeId], references: [id], onDelete: Cascade)
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([feeId])
+  @@index([studentId])
+}
+
+model Attendance {
+  id        String      @id @default(cuid())
+  studentId String
+  classId   String
+  schoolId  String
+  date      DateTime
+  status    String      @default("PRESENT")
+  remarks   String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  class     SchoolClass @relation(fields: [classId], references: [id], onDelete: Cascade)
+  school    School      @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student   Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, date])
+  @@index([schoolId])
+  @@index([classId])
+  @@index([studentId])
+  @@index([date])
+}
+
+model WebsitePage {
+  id        String   @id @default(cuid())
+  schoolId  String
+  slug      String
+  title     String
+  subtitle  String?
+  heroImage String?
+  content   Json
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@unique([schoolId, slug])
+  @@index([schoolId])
+}
+
+model NewsItem {
+  id          String   @id @default(cuid())
+  schoolId    String
+  title       String
+  excerpt     String?
+  content     String
+  imageUrl    String?
+  published   Boolean  @default(true)
+  publishedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  school      School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId])
+  @@index([published])
+  @@index([publishedAt])
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  schoolId  String
+  name      String
+  email     String?
+  phone     String?
+  subject   String?
+  message   String
+  type      String   @default("ENQUIRY")
+  status    String   @default("NEW")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId])
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model AcademicYear {
+  id               String           @id @default(cuid())
+  name             String
+  startDate        DateTime
+  endDate          DateTime
+  isCurrent        Boolean          @default(false)
+  schoolId         String
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  school           School           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  results          Result[]
+  terms            Term[]
+  timetableEntries TimetableEntry[]
+
+  @@unique([schoolId, name])
+  @@index([schoolId])
+  @@index([isCurrent])
+}
+
+model Term {
+  id               String           @id @default(cuid())
+  name             String
+  order            Int
+  startDate        DateTime
+  endDate          DateTime
+  isCurrent        Boolean          @default(false)
+  academicYearId   String
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  results          Result[]
+  academicYear     AcademicYear     @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  timetableEntries TimetableEntry[]
+
+  @@unique([academicYearId, name])
+  @@unique([academicYearId, order])
+  @@index([academicYearId])
+  @@index([isCurrent])
+}
+
+model TimetableEntry {
+  id             String       @id @default(cuid())
+  schoolId       String
+  academicYearId String
+  termId         String
+  classId        String
+  subjectId      String
+  teacherId      String?
+  dayOfWeek      Int
+  startTime      String
+  endTime        String
+  room           String?
+  notes          String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  class          SchoolClass  @relation(fields: [classId], references: [id], onDelete: Cascade)
+  school         School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  subject        Subject      @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher        Teacher?     @relation(fields: [teacherId], references: [id])
+  term           Term         @relation(fields: [termId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId])
+  @@index([academicYearId])
+  @@index([termId])
+  @@index([classId])
+  @@index([subjectId])
+  @@index([teacherId])
+}
+
+model ReportCardInfo {
+  id                    String    @id @default(cuid())
+  schoolId              String
+  studentId             String
+  academicYearId        String?
+  termId                String?
+  photoUrl              String?
+  vacationDate          DateTime?
+  reopeningDate         DateTime?
+  promotionStatus       String?
+  conduct               String?
+  attitude              String?
+  interest              String?
+  classTeacherRemark    String?
+  headteacherRemark     String?
+  classTeacherName      String?
+  headteacherName       String?
+  classTeacherSignature String?
+  headteacherSignature  String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  school                School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student               Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, academicYearId, termId])
+  @@index([schoolId])
+  @@index([studentId])
+  @@index([academicYearId])
+  @@index([termId])
+}
+
+model StaffTask {
+  id          String    @id @default(cuid())
+  schoolId    String
+  userId      String
+  title       String
+  description String?
+  dueDate     DateTime?
+  completed   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  school      School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId])
+  @@index([userId])
+  @@index([completed])
+  @@index([dueDate])
+}
+
+model StudentNote {
+  id        String   @id @default(cuid())
+  schoolId  String
+  studentId String
+  authorId  String
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId])
+  @@index([studentId])
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+model AccountingEntry {
+  id            String   @id @default(cuid())
+  schoolId      String
+  type          String
+  category      String
+  description   String
+  amount        Float
+  reference     String?
+  paymentMethod String?
+  entryDate     DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  school        School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId])
+  @@index([schoolId, type])
+  @@index([schoolId, entryDate])
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  TEACHER
+  STUDENT
+  PARENT
+}

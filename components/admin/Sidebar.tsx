@@ -1,283 +1,125 @@
+
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const navigation = [
   {
-    section: "OVERVIEW",
+    title: "Main",
     items: [
-      {
-        label: "Dashboard",
-        href: "/admin/dashboard",
-        icon: "⌂",
-      },
-      {
-        label: "Tasks",
-        href: "/admin/tasks",
-        icon: "✓",
-      },
+      { label: "Dashboard", href: "/admin/dashboard" },
     ],
   },
   {
-    section: "ACADEMIC",
+    title: "Management",
     items: [
-      {
-        label: "Students",
-        href: "/admin/students",
-        icon: "🎓",
-      },
-      {
-        label: "Teachers",
-        href: "/admin/teachers",
-        icon: "👨‍🏫",
-      },
-      {
-        label: "Classes",
-        href: "/admin/classes",
-        icon: "🏫",
-      },
-      {
-        label: "Subjects",
-        href: "/admin/subjects",
-        icon: "📚",
-      },
-      {
-        label: "Class Subjects",
-        href: "/admin/class-subjects",
-        icon: "🔗",
-      },
-      {
-        label: "Academic Years",
-        href: "/admin/academic-years",
-        icon: "🗓️",
-      },
-      {
-        label: "Timetable",
-        href: "/admin/timetable",
-        icon: "📅",
-      },
-      {
-        label: "Assignments",
-        href: "/admin/assignments",
-        icon: "📝",
-      },
-      {
-        label: "Attendance",
-        href: "/admin/attendance",
-        icon: "✓",
-      },
-      {
-        label: "Report Card",
-        href: "/admin/report-card",
-        icon: "📊",
-      },
+      { label: "Students", href: "/admin/students" },
+      { label: "Teachers", href: "/admin/teachers" },
+      { label: "Classes", href: "/admin/classes" },
+      { label: "Subjects", href: "/admin/subjects" },
+      { label: "Attendance", href: "/admin/attendance" },
+      { label: "Results", href: "/admin/results" },
+      { label: "Fees", href: "/admin/fees" },
+      { label: "Parents", href: "/admin/parents" },
+      { label: "Schools", href: "/admin/schools", superAdminOnly: true },
     ],
   },
   {
-    section: "STUDENTS & PARENTS",
+    title: "System",
     items: [
-      {
-        label: "Parents",
-        href: "/admin/parents",
-        icon: "👨‍👩‍👧",
-      },
-      {
-        label: "Student Assignments",
-        href: "/admin/student-assignments",
-        icon: "📋",
-      },
-      {
-        label: "Fees",
-        href: "/admin/fees",
-        icon: "💰",
-      },
-    ],
-  },
-  {
-    section: "MANAGEMENT",
-    items: [
-      {
-        label: "Accounting",
-        href: "/admin/accounting",
-        icon: "💵",
-      },
-      {
-        label: "News",
-        href: "/admin/news",
-        icon: "📰",
-      },
-      {
-        label: "Contact Messages",
-        href: "/admin/contact-messages",
-        icon: "✉",
-      },
-      {
-        label: "Schools",
-        href: "/admin/schools",
-        icon: "🏢",
-      },
-      {
-        label: "Users",
-        href: "/admin/users",
-        icon: "👥",
-      },
-      {
-        label: "Website",
-        href: "/admin/website",
-        icon: "🌐",
-      },
-      {
-        label: "Settings",
-        href: "/admin/settings",
-        icon: "⚙",
-      },
+      { label: "Settings", href: "/admin/settings" },
     ],
   },
 ];
 
-function NavigationContent({
-  pathname,
-  onNavigate,
-}: {
-  pathname: string;
-  onNavigate?: () => void;
-}) {
-  return (
-    <nav className="flex-1 overflow-y-auto px-4 py-6">
-      {navigation.map((group) => (
-        <div key={group.section} className="mb-8">
-          <p className="mb-4 px-3 text-xs font-semibold tracking-wide text-gray-400">
-            {group.section}
-          </p>
-
-          <div className="space-y-1">
-            {group.items.map((item) => {
-              const active =
-                pathname === item.href ||
-                pathname.startsWith(`${item.href}/`);
-
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={onNavigate}
-                  className={`flex items-center gap-4 rounded-xl px-3 py-3 text-sm font-medium transition ${
-                    active
-                      ? "bg-blue-50 text-blue-600"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                  }`}
-                >
-                  <span className="flex w-5 justify-center text-base">
-                    {item.icon}
-                  </span>
-
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      ))}
-    </nav>
-  );
-}
-
 export default function Sidebar() {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
+  const [role, setRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadUser() {
+      try {
+        const response = await fetch("/api/auth/me", {
+          credentials: "include",
+          cache: "no-store",
+        });
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+
+        if (!cancelled) {
+          setRole(data?.user?.role ?? null);
+        }
+      } catch {
+        if (!cancelled) setRole(null);
+      }
+    }
+
+    void loadUser();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
-    <>
-      {/* Desktop sidebar */}
-      <aside className="hidden h-screen w-72 shrink-0 flex-col border-r border-gray-200 bg-white md:flex">
-        <div className="border-b border-gray-200 px-6 py-6">
-          <h1 className="text-xl font-extrabold tracking-tight text-gray-900">
-            EduNova Suite
-          </h1>
+    <aside className="flex h-full w-64 shrink-0 flex-col border-r border-gray-200 bg-white">
+      <div className="border-b border-gray-200 px-6 py-5">
+        <Link
+          href="/admin/dashboard"
+          className="text-xl font-bold text-blue-700"
+        >
+          EduNova
+        </Link>
+        <p className="mt-1 text-xs text-gray-500">School Management</p>
+      </div>
 
-          <p className="mt-1 text-sm text-gray-500">
-            Administrator Portal
-          </p>
-        </div>
+      <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5">
+        {navigation.map((section) => {
+          const visibleItems = section.items.filter(
+            (item) =>
+              !("superAdminOnly" in item && item.superAdminOnly) ||
+              role === "SUPER_ADMIN"
+          );
 
-        <NavigationContent pathname={pathname} />
+          if (visibleItems.length === 0) return null;
 
-        <div className="border-t border-gray-200 px-4 py-5">
-          <Link
-            href="/"
-            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-          >
-            <span>←</span>
-            <span>School Website</span>
-          </Link>
-        </div>
-      </aside>
+          return (
+            <div key={section.title}>
+              <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                {section.title}
+              </p>
 
-      {/* Mobile hamburger */}
-      <button
-        type="button"
-        aria-label="Open admin navigation"
-        onClick={() => setOpen(true)}
-        className="fixed left-4 top-4 z-40 flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 bg-white text-xl text-gray-700 shadow-md md:hidden"
-      >
-        ☰
-      </button>
+              <div className="space-y-1">
+                {visibleItems.map((item) => {
+                  const active =
+                    pathname === item.href ||
+                    pathname.startsWith(`${item.href}/`);
 
-      {/* Mobile overlay */}
-      {open && (
-        <button
-          type="button"
-          aria-label="Close navigation overlay"
-          onClick={() => setOpen(false)}
-          className="fixed inset-0 z-40 bg-black/40 md:hidden"
-        />
-      )}
-
-      {/* Mobile drawer */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-white shadow-2xl transition-transform duration-200 md:hidden ${
-          open ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-6">
-          <div>
-            <h1 className="text-xl font-extrabold tracking-tight text-gray-900">
-              EduNova Suite
-            </h1>
-
-            <p className="mt-1 text-sm text-gray-500">
-              Administrator Portal
-            </p>
-          </div>
-
-          <button
-            type="button"
-            aria-label="Close admin navigation"
-            onClick={() => setOpen(false)}
-            className="flex h-10 w-10 items-center justify-center rounded-xl text-2xl text-gray-500 hover:bg-gray-100"
-          >
-            ×
-          </button>
-        </div>
-
-        <NavigationContent
-          pathname={pathname}
-          onNavigate={() => setOpen(false)}
-        />
-
-        <div className="border-t border-gray-200 px-4 py-5">
-          <Link
-            href="/"
-            onClick={() => setOpen(false)}
-            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-          >
-            <span>←</span>
-            <span>School Website</span>
-          </Link>
-        </div>
-      </aside>
-    </>
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`block rounded-lg px-3 py-2.5 text-sm font-medium transition ${
+                        active
+                          ? "bg-blue-50 text-blue-700"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </nav>
+    </aside>
   );
 }

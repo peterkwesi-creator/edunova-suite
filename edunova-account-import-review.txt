@@ -1,0 +1,2935 @@
+EDUNOVA ACCOUNT AND IMPORT REVIEW
+
+
+========== app\(admin)\admin\students\import\page.tsx ==========
+"use client";
+
+import {
+  ChangeEvent,
+  useState,
+} from "react";
+import { useRouter } from "next/navigation";
+
+type ImportResult = {
+  rowNumber: number;
+  admissionNumber: string;
+  studentName: string;
+  status:
+    | "CREATED"
+    | "SKIPPED"
+    | "FAILED";
+  message: string;
+};
+
+type ImportResponse = {
+  message: string;
+
+  summary: {
+    totalRows: number;
+    created: number;
+    skipped: number;
+    failed: number;
+    credentialsGenerated: number;
+  };
+
+  results: ImportResult[];
+
+  credentials: Array<{
+    accountType:
+      | "STUDENT"
+      | "PARENT";
+    name: string;
+    admissionNumber: string;
+    loginEmail: string;
+    temporaryPassword: string;
+    status: "NEW" | "EXISTING";
+  }>;
+
+  credentialsCsv: string;
+};
+
+const TEMPLATE_HEADERS = [
+  "Admission Number",
+  "First Name",
+  "Last Name",
+  "Gender",
+  "Date of Birth",
+  "Phone",
+  "Email",
+  "Address",
+  "Class Name",
+  "Parent 1 Name",
+  "Parent 1 Phone",
+  "Parent 1 Email",
+  "Parent 1 Relationship",
+  "Parent 2 Name",
+  "Parent 2 Phone",
+  "Parent 2 Email",
+  "Parent 2 Relationship",
+];
+
+const TEMPLATE_ROW = [
+  "ADM001",
+  "Kwame",
+  "Mensah",
+  "Male",
+  "2012-05-14",
+  "0240000000",
+  "student@example.com",
+  "Accra",
+  "JHS 1",
+  "Kofi Mensah",
+  "0241111111",
+  "father@example.com",
+  "Father",
+  "Ama Mensah",
+  "0242222222",
+  "mother@example.com",
+  "Mother",
+];
+
+function escapeCsvValue(
+  value: string
+) {
+  if (
+    value.includes(",") ||
+    value.includes('"') ||
+    value.includes("\n")
+  ) {
+    return `"${value.replace(
+      /"/g,
+      '""'
+    )}"`;
+  }
+
+  return value;
+}
+
+function downloadCsv(
+  filename: string,
+  content: string
+) {
+  const blob = new Blob(
+    [content],
+    {
+      type: "text/csv;charset=utf-8;",
+    }
+  );
+
+  const url =
+    URL.createObjectURL(blob);
+
+  const link =
+    document.createElement("a");
+
+  link.href = url;
+  link.download = filename;
+
+  document.body.appendChild(link);
+
+  link.click();
+
+  link.remove();
+
+  URL.revokeObjectURL(url);
+}
+
+export default function StudentImportPage() {
+  const router = useRouter();
+
+  const [file, setFile] =
+    useState<File | null>(null);
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
+
+  const [result, setResult] =
+    useState<ImportResponse | null>(
+      null
+    );
+
+  function handleFileChange(
+    event: ChangeEvent<HTMLInputElement>
+  ) {
+    setError("");
+    setResult(null);
+
+    const selectedFile =
+      event.target.files?.[0] ||
+      null;
+
+    if (!selectedFile) {
+      setFile(null);
+      return;
+    }
+
+    if (
+      !selectedFile.name
+        .toLowerCase()
+        .endsWith(".csv")
+    ) {
+      setError(
+        "Please select a CSV file. If you have an Excel file, save it as CSV first."
+      );
+
+      event.target.value = "";
+      setFile(null);
+      return;
+    }
+
+    setFile(selectedFile);
+  }
+
+  async function handleImport() {
+    if (!file) {
+      setError(
+        "Please select a CSV file first."
+      );
+      return;
+    }
+
+    setError("");
+    setResult(null);
+    setLoading(true);
+
+    try {
+      const formData =
+        new FormData();
+
+      formData.append(
+        "file",
+        file
+      );
+
+      const response =
+        await fetch(
+          "/api/admin/students/import",
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+            "Student import failed."
+        );
+      }
+
+      setResult(data);
+    } catch (error) {
+      console.error(error);
+
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Student import failed."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function downloadTemplate() {
+    const content = [
+      TEMPLATE_HEADERS
+        .map(escapeCsvValue)
+        .join(","),
+
+      TEMPLATE_ROW
+        .map(escapeCsvValue)
+        .join(","),
+    ].join("\n");
+
+    downloadCsv(
+      "edunova-student-import-template.csv",
+      content
+    );
+  }
+
+  function downloadCredentials() {
+    if (!result) {
+      return;
+    }
+
+    downloadCsv(
+      "edunova-portal-credentials.csv",
+      result.credentialsCsv
+    );
+  }
+
+  function resetImport() {
+    setFile(null);
+    setResult(null);
+    setError("");
+  }
+
+  return (
+    <div className="max-w-6xl space-y-6">
+      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Import Existing Students
+          </h1>
+
+          <p className="mt-1 text-gray-500">
+            Import an existing school's
+            students and automatically
+            generate their portal accounts.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() =>
+            router.push(
+              "/admin/students"
+            )
+          }
+          className="rounded-lg border border-gray-300 px-5 py-3 font-medium text-gray-700 hover:bg-gray-50"
+        >
+          Back to Students
+        </button>
+      </div>
+
+      {error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      {!result && (
+        <>
+          {/* TEMPLATE */}
+          <div className="rounded-2xl border border-blue-200 bg-blue-50 p-6">
+            <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+              <div>
+                <h2 className="text-xl font-bold text-blue-950">
+                  Step 1 — Prepare your CSV
+                </h2>
+
+                <p className="mt-1 text-sm text-blue-800">
+                  Download the EduNova
+                  template and fill it with
+                  the school's existing
+                  student and parent data.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={
+                  downloadTemplate
+                }
+                className="rounded-lg bg-blue-600 px-5 py-3 font-medium text-white hover:bg-blue-700"
+              >
+                Download CSV Template
+              </button>
+            </div>
+
+            <div className="mt-5 rounded-xl bg-white p-4">
+              <p className="mb-3 text-sm font-semibold text-gray-700">
+                Required columns:
+              </p>
+
+              <div className="flex flex-wrap gap-2">
+                {[
+                  "Admission Number",
+                  "First Name",
+                  "Last Name",
+                  "Gender",
+                  "Class Name",
+                  "Parent 1 Name",
+                ].map(
+                  (column) => (
+                    <span
+                      key={column}
+                      className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800"
+                    >
+                      {column}
+                    </span>
+                  )
+                )}
+              </div>
+
+              <p className="mt-4 text-sm text-gray-600">
+                Parent 2 is optional. Phone,
+                email, address, date of birth
+                and other contact information
+                can also be included.
+              </p>
+            </div>
+          </div>
+
+          {/* UPLOAD */}
+          <div className="rounded-2xl bg-white p-6 shadow">
+            <h2 className="text-xl font-bold text-gray-900">
+              Step 2 — Upload CSV
+            </h2>
+
+            <p className="mt-1 text-sm text-gray-500">
+              Maximum file size: 10 MB.
+              Maximum 2,000 students per
+              import.
+            </p>
+
+            <div className="mt-6 rounded-xl border-2 border-dashed border-gray-300 p-8 text-center">
+              <input
+                id="student-csv"
+                type="file"
+                accept=".csv,text/csv"
+                onChange={
+                  handleFileChange
+                }
+                className="hidden"
+              />
+
+              <label
+                htmlFor="student-csv"
+                className="inline-flex cursor-pointer rounded-lg bg-gray-900 px-5 py-3 font-medium text-white hover:bg-gray-800"
+              >
+                Choose CSV File
+              </label>
+
+              {file && (
+                <div className="mt-5">
+                  <p className="font-semibold text-gray-900">
+                    {file.name}
+                  </p>
+
+                  <p className="mt-1 text-sm text-gray-500">
+                    {(
+                      file.size /
+                      1024
+                    ).toFixed(1)}{" "}
+                    KB
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 rounded-xl border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
+              <strong>
+                Important:
+              </strong>{" "}
+              Newly generated passwords
+              are displayed only during
+              this import and should be
+              saved securely.
+            </div>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={
+                  handleImport
+                }
+                disabled={
+                  !file || loading
+                }
+                className="rounded-lg bg-blue-600 px-6 py-3 font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+              >
+                {loading
+                  ? "Importing Students..."
+                  : "Start Import"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  router.push(
+                    "/admin/students"
+                  )
+                }
+                className="rounded-lg border border-gray-300 px-6 py-3 font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+
+          {/* PROCESS */}
+          <div className="rounded-2xl bg-white p-6 shadow">
+            <h2 className="text-xl font-bold text-gray-900">
+              What EduNova will do
+            </h2>
+
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              {[
+                "Create each student profile.",
+                "Match each student to an existing class.",
+                "Create a student portal account.",
+                "Create Parent 1 and connect them to the student.",
+                "Create optional Parent 2 and connect them to the student.",
+                "Reuse an existing parent account when the parent already exists.",
+                "Allow one parent account to access multiple children.",
+                "Generate a credential report for newly created accounts.",
+                "Skip students whose admission numbers already exist.",
+                "Report invalid rows without stopping the entire import.",
+              ].map(
+                (item, index) => (
+                  <div
+                    key={item}
+                    className="flex gap-3 rounded-xl border border-gray-200 p-4"
+                  >
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-700">
+                      {index + 1}
+                    </span>
+
+                    <p className="text-sm text-gray-700">
+                      {item}
+                    </p>
+                  </div>
+                )
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* RESULT */}
+      {result && (
+        <>
+          <div className="rounded-2xl border border-green-200 bg-green-50 p-6">
+            <h2 className="text-2xl font-bold text-green-950">
+              Import Completed
+            </h2>
+
+            <p className="mt-1 text-sm text-green-800">
+              EduNova finished processing
+              the uploaded student list.
+            </p>
+
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-xl bg-white p-5">
+                <p className="text-sm text-gray-500">
+                  Total Rows
+                </p>
+
+                <p className="mt-1 text-3xl font-bold text-gray-900">
+                  {
+                    result.summary
+                      .totalRows
+                  }
+                </p>
+              </div>
+
+              <div className="rounded-xl bg-white p-5">
+                <p className="text-sm text-gray-500">
+                  Students Created
+                </p>
+
+                <p className="mt-1 text-3xl font-bold text-green-700">
+                  {
+                    result.summary
+                      .created
+                  }
+                </p>
+              </div>
+
+              <div className="rounded-xl bg-white p-5">
+                <p className="text-sm text-gray-500">
+                  Skipped
+                </p>
+
+                <p className="mt-1 text-3xl font-bold text-yellow-700">
+                  {
+                    result.summary
+                      .skipped
+                  }
+                </p>
+              </div>
+
+              <div className="rounded-xl bg-white p-5">
+                <p className="text-sm text-gray-500">
+                  Failed
+                </p>
+
+                <p className="mt-1 text-3xl font-bold text-red-700">
+                  {
+                    result.summary
+                      .failed
+                  }
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* CREDENTIALS */}
+          <div className="rounded-2xl bg-white p-6 shadow">
+            <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">
+                  Portal Credentials
+                </h2>
+
+                <p className="mt-1 text-sm text-gray-500">
+                  {
+                    result.summary
+                      .credentialsGenerated
+                  }{" "}
+                  new portal credentials
+                  were generated.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={
+                  downloadCredentials
+                }
+                disabled={
+                  result.credentials
+                    .length === 0
+                }
+                className="rounded-lg bg-green-600 px-5 py-3 font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+              >
+                Download Credentials CSV
+              </button>
+            </div>
+
+            {result.credentials
+              .length > 0 ? (
+              <div className="mt-6 overflow-x-auto rounded-xl border border-gray-200">
+                <table className="min-w-full text-left text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 font-semibold text-gray-700">
+                        Type
+                      </th>
+
+                      <th className="px-4 py-3 font-semibold text-gray-700">
+                        Name
+                      </th>
+
+                      <th className="px-4 py-3 font-semibold text-gray-700">
+                        Admission
+                      </th>
+
+                      <th className="px-4 py-3 font-semibold text-gray-700">
+                        Login Email
+                      </th>
+
+                      <th className="px-4 py-3 font-semibold text-gray-700">
+                        Temporary Password
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {result.credentials.map(
+                      (
+                        credential,
+                        index
+                      ) => (
+                        <tr
+                          key={`${credential.loginEmail}-${index}`}
+                          className="border-t"
+                        >
+                          <td className="px-4 py-3">
+                            <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
+                              {
+                                credential.accountType
+                              }
+                            </span>
+                          </td>
+
+                          <td className="px-4 py-3 font-medium text-gray-900">
+                            {
+                              credential.name
+                            }
+                          </td>
+
+                          <td className="px-4 py-3 text-gray-600">
+                            {
+                              credential.admissionNumber
+                            }
+                          </td>
+
+                          <td className="px-4 py-3 font-mono text-xs text-gray-700">
+                            {
+                              credential.loginEmail
+                            }
+                          </td>
+
+                          <td className="px-4 py-3 font-mono text-xs font-semibold text-gray-900">
+                            {
+                              credential.temporaryPassword
+                            }
+                          </td>
+                        </tr>
+                      )
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-5 text-sm text-gray-600">
+                No new credentials were
+                generated. Existing accounts
+                were reused or all rows were
+                skipped.
+              </div>
+            )}
+          </div>
+
+          {/* RESULTS */}
+          <div className="rounded-2xl bg-white p-6 shadow">
+            <h2 className="text-xl font-bold text-gray-900">
+              Import Results
+            </h2>
+
+            <div className="mt-5 overflow-x-auto rounded-xl border border-gray-200">
+              <table className="min-w-full text-left text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 font-semibold text-gray-700">
+                      Row
+                    </th>
+
+                    <th className="px-4 py-3 font-semibold text-gray-700">
+                      Admission
+                    </th>
+
+                    <th className="px-4 py-3 font-semibold text-gray-700">
+                      Student
+                    </th>
+
+                    <th className="px-4 py-3 font-semibold text-gray-700">
+                      Status
+                    </th>
+
+                    <th className="px-4 py-3 font-semibold text-gray-700">
+                      Message
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {result.results.map(
+                    (item) => (
+                      <tr
+                        key={`${item.rowNumber}-${item.admissionNumber}`}
+                        className="border-t"
+                      >
+                        <td className="px-4 py-3 text-gray-600">
+                          {
+                            item.rowNumber
+                          }
+                        </td>
+
+                        <td className="px-4 py-3 font-medium text-gray-900">
+                          {
+                            item.admissionNumber
+                          }
+                        </td>
+
+                        <td className="px-4 py-3 text-gray-700">
+                          {
+                            item.studentName
+                          }
+                        </td>
+
+                        <td className="px-4 py-3">
+                          <span
+                            className={
+                              item.status ===
+                              "CREATED"
+                                ? "rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-800"
+                                : item.status ===
+                                    "SKIPPED"
+                                  ? "rounded-full bg-yellow-100 px-2 py-1 text-xs font-semibold text-yellow-800"
+                                  : "rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-800"
+                            }
+                          >
+                            {
+                              item.status
+                            }
+                          </span>
+                        </td>
+
+                        <td className="px-4 py-3 text-gray-600">
+                          {
+                            item.message
+                          }
+                        </td>
+                      </tr>
+                    )
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={
+                downloadCredentials
+              }
+              disabled={
+                result.credentials
+                  .length === 0
+              }
+              className="rounded-lg bg-green-600 px-6 py-3 font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+            >
+              Download Credentials
+            </button>
+
+            <button
+              type="button"
+              onClick={
+                resetImport
+              }
+              className="rounded-lg border border-gray-300 px-6 py-3 font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Import Another School List
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                router.push(
+                  "/admin/students"
+                )
+              }
+              className="rounded-lg border border-gray-300 px-6 py-3 font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Go to Students
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+
+========== app\api\admin\students\import\route.ts ==========
+import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { randomBytes } from "crypto";
+import { prisma } from "@/lib/prisma";
+import {
+  hashPassword,
+  SESSION_COOKIE,
+  verifySession,
+} from "@/lib/auth";
+
+type CsvRow = {
+  admissionNumber: string;
+  firstName: string;
+  lastName: string;
+  gender: string;
+  dateOfBirth: string;
+  phone: string;
+  email: string;
+  address: string;
+  className: string;
+
+  parent1Name: string;
+  parent1Phone: string;
+  parent1Email: string;
+  parent1Relationship: string;
+
+  parent2Name: string;
+  parent2Phone: string;
+  parent2Email: string;
+  parent2Relationship: string;
+};
+
+type CredentialRow = {
+  accountType: "STUDENT" | "PARENT";
+  name: string;
+  admissionNumber: string;
+  loginEmail: string;
+  temporaryPassword: string;
+  status: "NEW" | "EXISTING";
+};
+
+type ImportResult = {
+  rowNumber: number;
+  admissionNumber: string;
+  studentName: string;
+  status: "CREATED" | "SKIPPED" | "FAILED";
+  message: string;
+};
+
+async function getAdminSession() {
+  const cookieStore = await cookies();
+
+  const session = verifySession(
+    cookieStore.get(SESSION_COOKIE)?.value
+  );
+
+  if (
+    !session ||
+    (session.role !== "ADMIN" &&
+      session.role !== "SUPER_ADMIN")
+  ) {
+    return null;
+  }
+
+  const user = await prisma.user.findFirst({
+    where: {
+      id: session.userId,
+      schoolId: session.schoolId,
+      role: session.role,
+      active: true,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!user) {
+    return null;
+  }
+
+  return session;
+}
+
+function sanitizeIdentifier(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function generateTemporaryPassword() {
+  return `Edu${randomBytes(5).toString("hex")}!`;
+}
+
+async function generateUniquePortalEmail(
+  tx: any,
+  prefix: string,
+  identifier: string,
+  schoolSlug: string
+) {
+  const safePrefix =
+    sanitizeIdentifier(prefix) || "user";
+
+  const safeIdentifier =
+    sanitizeIdentifier(identifier) || "account";
+
+  const safeSlug =
+    sanitizeIdentifier(schoolSlug) || "school";
+
+  const base = `${safePrefix}.${safeIdentifier}@${safeSlug}.edunova.school`;
+
+  let email = base;
+  let counter = 1;
+
+  while (
+    await tx.user.findUnique({
+      where: {
+        email,
+      },
+      select: {
+        id: true,
+      },
+    })
+  ) {
+    email = `${safePrefix}.${safeIdentifier}${counter}@${safeSlug}.edunova.school`;
+    counter++;
+  }
+
+  return email;
+}
+
+function normalizeHeader(value: string) {
+  return value
+    .replace(/^\uFEFF/, "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "")
+    .replace(/[_-]/g, "");
+}
+
+function parseCsvLine(line: string) {
+  const values: string[] = [];
+
+  let current = "";
+  let insideQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const character = line[i];
+
+    if (character === '"') {
+      if (
+        insideQuotes &&
+        line[i + 1] === '"'
+      ) {
+        current += '"';
+        i++;
+      } else {
+        insideQuotes = !insideQuotes;
+      }
+
+      continue;
+    }
+
+    if (
+      character === "," &&
+      !insideQuotes
+    ) {
+      values.push(current.trim());
+      current = "";
+      continue;
+    }
+
+    current += character;
+  }
+
+  values.push(current.trim());
+
+  return values;
+}
+
+function parseCsv(content: string) {
+  const lines = content
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .split("\n")
+    .filter((line) => line.trim() !== "");
+
+  if (lines.length < 2) {
+    throw new Error(
+      "The CSV file must contain a header row and at least one student row."
+    );
+  }
+
+  const headers = parseCsvLine(lines[0]).map(
+    normalizeHeader
+  );
+
+  const headerIndex = new Map<
+    string,
+    number
+  >();
+
+  headers.forEach((header, index) => {
+    headerIndex.set(header, index);
+  });
+
+  /*
+   * Required fields for every imported student.
+   *
+   * Parent 1 Phone is intentionally required
+   * because it is used to reliably recognize
+   * an existing parent across multiple children.
+   */
+  const requiredHeaders = [
+    "admissionnumber",
+    "firstname",
+    "lastname",
+    "gender",
+    "classname",
+    "parent1name",
+    "parent1phone",
+  ];
+
+  const missingHeaders =
+    requiredHeaders.filter(
+      (header) =>
+        !headerIndex.has(header)
+    );
+
+  if (missingHeaders.length > 0) {
+    throw new Error(
+      `Missing required CSV columns: ${missingHeaders.join(
+        ", "
+      )}`
+    );
+  }
+
+  function getValue(
+    values: string[],
+    name: string
+  ) {
+    const index =
+      headerIndex.get(name);
+
+    if (index === undefined) {
+      return "";
+    }
+
+    return (
+      values[index]?.trim() || ""
+    );
+  }
+
+  const rows: CsvRow[] = [];
+
+  for (
+    let index = 1;
+    index < lines.length;
+    index++
+  ) {
+    const values = parseCsvLine(
+      lines[index]
+    );
+
+    rows.push({
+      admissionNumber:
+        getValue(
+          values,
+          "admissionnumber"
+        ),
+
+      firstName:
+        getValue(
+          values,
+          "firstname"
+        ),
+
+      lastName:
+        getValue(
+          values,
+          "lastname"
+        ),
+
+      gender:
+        getValue(
+          values,
+          "gender"
+        ),
+
+      dateOfBirth:
+        getValue(
+          values,
+          "dateofbirth"
+        ),
+
+      phone:
+        getValue(
+          values,
+          "phone"
+        ),
+
+      email:
+        getValue(
+          values,
+          "email"
+        ),
+
+      address:
+        getValue(
+          values,
+          "address"
+        ),
+
+      className:
+        getValue(
+          values,
+          "classname"
+        ),
+
+      parent1Name:
+        getValue(
+          values,
+          "parent1name"
+        ),
+
+      parent1Phone:
+        getValue(
+          values,
+          "parent1phone"
+        ),
+
+      parent1Email:
+        getValue(
+          values,
+          "parent1email"
+        ),
+
+      parent1Relationship:
+        getValue(
+          values,
+          "parent1relationship"
+        ) || "Parent",
+
+      parent2Name:
+        getValue(
+          values,
+          "parent2name"
+        ),
+
+      parent2Phone:
+        getValue(
+          values,
+          "parent2phone"
+        ),
+
+      parent2Email:
+        getValue(
+          values,
+          "parent2email"
+        ),
+
+      parent2Relationship:
+        getValue(
+          values,
+          "parent2relationship"
+        ) || "Parent",
+    });
+  }
+
+  return rows;
+}
+
+function parseDate(value: string) {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = new Date(value);
+
+  if (
+    Number.isNaN(
+      parsed.getTime()
+    )
+  ) {
+    return null;
+  }
+
+  return parsed;
+}
+
+function splitParentName(name: string) {
+  const parts =
+    name.trim().split(/\s+/);
+
+  const firstName =
+    parts.shift() || "Parent";
+
+  const lastName =
+    parts.join(" ") || firstName;
+
+  return {
+    firstName,
+    lastName,
+  };
+}
+
+function escapeCsvValue(
+  value: unknown
+) {
+  const stringValue =
+    String(value ?? "");
+
+  if (
+    stringValue.includes(",") ||
+    stringValue.includes('"') ||
+    stringValue.includes("\n")
+  ) {
+    return `"${stringValue.replace(
+      /"/g,
+      '""'
+    )}"`;
+  }
+
+  return stringValue;
+}
+
+function credentialsToCsv(
+  credentials: CredentialRow[]
+) {
+  const headers = [
+    "Account Type",
+    "Name",
+    "Admission Number",
+    "Login Email",
+    "Temporary Password",
+    "Status",
+  ];
+
+  const rows = credentials.map(
+    (credential) =>
+      [
+        credential.accountType,
+        credential.name,
+        credential.admissionNumber,
+        credential.loginEmail,
+        credential.temporaryPassword,
+        credential.status,
+      ]
+        .map(escapeCsvValue)
+        .join(",")
+  );
+
+  return [
+    headers.join(","),
+    ...rows,
+  ].join("\n");
+}
+
+export async function POST(
+  request: NextRequest
+) {
+  try {
+    const session =
+      await getAdminSession();
+
+    if (!session) {
+      return NextResponse.json(
+        {
+          error: "Unauthorized.",
+        },
+        { status: 401 }
+      );
+    }
+
+    const schoolId =
+      session.schoolId;
+
+    const formData =
+      await request.formData();
+
+    const file =
+      formData.get("file");
+
+    if (!(file instanceof File)) {
+      return NextResponse.json(
+        {
+          error:
+            "Please upload a CSV file.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (
+      !file.name
+        .toLowerCase()
+        .endsWith(".csv")
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Only CSV files are supported in this version. Save your Excel spreadsheet as CSV and upload it again.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (file.size === 0) {
+      return NextResponse.json(
+        {
+          error:
+            "The uploaded CSV file is empty.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (
+      file.size >
+      10 * 1024 * 1024
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "The CSV file is too large. Maximum size is 10 MB.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const content =
+      await file.text();
+
+    let rows: CsvRow[];
+
+    try {
+      rows = parseCsv(content);
+    } catch (error) {
+      return NextResponse.json(
+        {
+          error:
+            error instanceof Error
+              ? error.message
+              : "Invalid CSV file.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (rows.length > 2000) {
+      return NextResponse.json(
+        {
+          error:
+            "A maximum of 2,000 students can be imported at once.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const school =
+      await prisma.school.findUnique({
+        where: {
+          id: schoolId,
+        },
+        select: {
+          id: true,
+          slug: true,
+        },
+      });
+
+    if (!school) {
+      return NextResponse.json(
+        {
+          error:
+            "School was not found.",
+        },
+        { status: 404 }
+      );
+    }
+
+    const schoolSlug =
+      school.slug;
+
+    const results: ImportResult[] =
+      [];
+
+    const credentials: CredentialRow[] =
+      [];
+
+    const importedAdmissionNumbers =
+      new Set<string>();
+
+    for (
+      let index = 0;
+      index < rows.length;
+      index++
+    ) {
+      const row =
+        rows[index];
+
+      const rowNumber =
+        index + 2;
+
+      const admissionNumber =
+        row.admissionNumber.trim();
+
+      const studentName =
+        `${row.firstName} ${row.lastName}`.trim();
+
+      /*
+       * Parent 1 name AND phone are
+       * explicitly required for every row.
+       */
+      if (
+        !admissionNumber ||
+        !row.firstName ||
+        !row.lastName ||
+        !row.gender ||
+        !row.className ||
+        !row.parent1Name ||
+        !row.parent1Phone
+      ) {
+        const missingFields: string[] =
+          [];
+
+        if (!admissionNumber) {
+          missingFields.push(
+            "Admission Number"
+          );
+        }
+
+        if (!row.firstName) {
+          missingFields.push(
+            "First Name"
+          );
+        }
+
+        if (!row.lastName) {
+          missingFields.push(
+            "Last Name"
+          );
+        }
+
+        if (!row.gender) {
+          missingFields.push(
+            "Gender"
+          );
+        }
+
+        if (!row.className) {
+          missingFields.push(
+            "Class Name"
+          );
+        }
+
+        if (!row.parent1Name) {
+          missingFields.push(
+            "Parent 1 Name"
+          );
+        }
+
+        if (!row.parent1Phone) {
+          missingFields.push(
+            "Parent 1 Phone"
+          );
+        }
+
+        results.push({
+          rowNumber,
+          admissionNumber,
+          studentName,
+          status: "FAILED",
+          message:
+            `Missing required field(s): ${missingFields.join(
+              ", "
+            )}.`,
+        });
+
+        continue;
+      }
+
+      const normalizedAdmissionNumber =
+        admissionNumber.toLowerCase();
+
+      if (
+        importedAdmissionNumbers.has(
+          normalizedAdmissionNumber
+        )
+      ) {
+        results.push({
+          rowNumber,
+          admissionNumber,
+          studentName,
+          status: "SKIPPED",
+          message:
+            "Duplicate admission number found in this CSV.",
+        });
+
+        continue;
+      }
+
+      importedAdmissionNumbers.add(
+        normalizedAdmissionNumber
+      );
+
+      try {
+        const existingStudent =
+          await prisma.student.findUnique(
+            {
+              where: {
+                studentNumber:
+                  admissionNumber,
+              },
+              select: {
+                id: true,
+              },
+            }
+          );
+
+        if (existingStudent) {
+          results.push({
+            rowNumber,
+            admissionNumber,
+            studentName,
+            status: "SKIPPED",
+            message:
+              "A student with this admission number already exists.",
+          });
+
+          continue;
+        }
+
+        const schoolClass =
+          await prisma.schoolClass.findFirst(
+            {
+              where: {
+                schoolId,
+                name: row.className,
+              },
+              select: {
+                id: true,
+                name: true,
+              },
+            }
+          );
+
+        if (!schoolClass) {
+          results.push({
+            rowNumber,
+            admissionNumber,
+            studentName,
+            status: "FAILED",
+            message:
+              `Class "${row.className}" was not found in this school.`,
+          });
+
+          continue;
+        }
+
+        const dateOfBirth =
+          parseDate(
+            row.dateOfBirth
+          );
+
+        if (
+          row.dateOfBirth &&
+          !dateOfBirth
+        ) {
+          results.push({
+            rowNumber,
+            admissionNumber,
+            studentName,
+            status: "FAILED",
+            message:
+              "Invalid date of birth.",
+          });
+
+          continue;
+        }
+
+        await prisma.$transaction(
+          async (tx) => {
+            /*
+             * CREATE STUDENT
+             */
+            const student =
+              await tx.student.create({
+                data: {
+                  studentNumber:
+                    admissionNumber,
+
+                  firstName:
+                    row.firstName,
+
+                  lastName:
+                    row.lastName,
+
+                  gender:
+                    row.gender,
+
+                  dateOfBirth,
+
+                  phone:
+                    row.phone || null,
+
+                  email:
+                    row.email
+                      ? row.email.toLowerCase()
+                      : null,
+
+                  address:
+                    row.address || null,
+
+                  guardianName:
+                    row.parent1Name,
+
+                  guardianPhone:
+                    row.parent1Phone,
+
+                  classId:
+                    schoolClass.id,
+
+                  schoolId,
+                },
+                select: {
+                  id: true,
+                  studentNumber: true,
+                  firstName: true,
+                  lastName: true,
+                },
+              });
+
+            /*
+             * STUDENT PORTAL
+             */
+            const studentEmail =
+              await generateUniquePortalEmail(
+                tx,
+                "student",
+                admissionNumber,
+                schoolSlug
+              );
+
+            const studentPassword =
+              generateTemporaryPassword();
+
+            await tx.user.create({
+              data: {
+                email:
+                  studentEmail,
+
+                passwordHash:
+                  hashPassword(
+                    studentPassword
+                  ),
+
+                firstName:
+                  student.firstName,
+
+                lastName:
+                  student.lastName,
+
+                role: "STUDENT",
+
+                schoolId,
+
+                active: true,
+
+                studentId:
+                  student.id,
+              },
+            });
+
+            credentials.push({
+              accountType:
+                "STUDENT",
+
+              name:
+                `${student.firstName} ${student.lastName}`,
+
+              admissionNumber:
+                student.studentNumber,
+
+              loginEmail:
+                studentEmail,
+
+              temporaryPassword:
+                studentPassword,
+
+              status: "NEW",
+            });
+
+            /*
+             * CREATE OR REUSE PARENT
+             */
+            async function createOrReuseParent(
+              name: string,
+              phone: string,
+              email: string,
+              relationship: string
+            ) {
+              const nameParts =
+                splitParentName(
+                  name
+                );
+
+              let parent = null;
+
+              /*
+               * Parent phone is the primary
+               * matching identifier.
+               */
+              parent =
+                await tx.parent.findFirst(
+                  {
+                    where: {
+                      schoolId,
+                      phone,
+                    },
+                  }
+                );
+
+              /*
+               * If no phone match exists,
+               * try email.
+               */
+              if (
+                !parent &&
+                email
+              ) {
+                parent =
+                  await tx.parent.findFirst(
+                    {
+                      where: {
+                        schoolId,
+                        email:
+                          email.toLowerCase(),
+                      },
+                    }
+                  );
+              }
+
+              /*
+               * Finally use exact name.
+               */
+              if (!parent) {
+                parent =
+                  await tx.parent.findFirst(
+                    {
+                      where: {
+                        schoolId,
+                        firstName:
+                          nameParts.firstName,
+                        lastName:
+                          nameParts.lastName,
+                      },
+                    }
+                  );
+              }
+
+              if (!parent) {
+                parent =
+                  await tx.parent.create(
+                    {
+                      data: {
+                        firstName:
+                          nameParts.firstName,
+
+                        lastName:
+                          nameParts.lastName,
+
+                        phone,
+
+                        email:
+                          email
+                            ? email.toLowerCase()
+                            : null,
+
+                        schoolId,
+                      },
+                    }
+                  );
+              } else {
+                const updateData: {
+                  email?: string;
+                } = {};
+
+                if (
+                  !parent.email &&
+                  email
+                ) {
+                  updateData.email =
+                    email.toLowerCase();
+                }
+
+                if (
+                  Object.keys(
+                    updateData
+                  ).length > 0
+                ) {
+                  parent =
+                    await tx.parent.update(
+                      {
+                        where: {
+                          id: parent.id,
+                        },
+                        data: updateData,
+                      }
+                    );
+                }
+              }
+
+              /*
+               * Connect parent to student.
+               */
+              await tx.parentStudent.upsert(
+                {
+                  where: {
+                    parentId_studentId: {
+                      parentId:
+                        parent.id,
+                      studentId:
+                        student.id,
+                    },
+                  },
+
+                  update: {
+                    relationship:
+                      relationship ||
+                      "Parent",
+
+                    isPrimary:
+                      relationship
+                        .toLowerCase()
+                        .includes(
+                          "father"
+                        ) ||
+                      relationship
+                        .toLowerCase()
+                        .includes(
+                          "mother"
+                        ),
+                  },
+
+                  create: {
+                    parentId:
+                      parent.id,
+
+                    studentId:
+                      student.id,
+
+                    relationship:
+                      relationship ||
+                      "Parent",
+
+                    isPrimary:
+                      relationship
+                        .toLowerCase()
+                        .includes(
+                          "father"
+                        ) ||
+                      relationship
+                        .toLowerCase()
+                        .includes(
+                          "mother"
+                        ),
+                  },
+                }
+              );
+
+              /*
+               * Reuse existing parent portal.
+               */
+              const existingUser =
+                await tx.user.findUnique(
+                  {
+                    where: {
+                      parentId:
+                        parent.id,
+                    },
+                    select: {
+                      id: true,
+                      email: true,
+                    },
+                  }
+                );
+
+              if (existingUser) {
+                return {
+                  email:
+                    existingUser.email,
+                  password: "",
+                  existing: true,
+                };
+              }
+
+              const identifier =
+                phone ||
+                `${parent.firstName}-${parent.lastName}-${parent.id.slice(
+                  -6
+                )}`;
+
+              const parentEmail =
+                await generateUniquePortalEmail(
+                  tx,
+                  "parent",
+                  identifier,
+                  schoolSlug
+                );
+
+              const parentPassword =
+                generateTemporaryPassword();
+
+              await tx.user.create({
+                data: {
+                  email:
+                    parentEmail,
+
+                  passwordHash:
+                    hashPassword(
+                      parentPassword
+                    ),
+
+                  firstName:
+                    parent.firstName,
+
+                  lastName:
+                    parent.lastName,
+
+                  role: "PARENT",
+
+                  schoolId,
+
+                  active: true,
+
+                  parentId:
+                    parent.id,
+                },
+              });
+
+              return {
+                email:
+                  parentEmail,
+
+                password:
+                  parentPassword,
+
+                existing: false,
+              };
+            }
+
+            /*
+             * PARENT 1 — REQUIRED
+             */
+            const parent1 =
+              await createOrReuseParent(
+                row.parent1Name,
+                row.parent1Phone,
+                row.parent1Email,
+                row.parent1Relationship
+              );
+
+            if (
+              !parent1.existing
+            ) {
+              credentials.push({
+                accountType:
+                  "PARENT",
+
+                name:
+                  row.parent1Name,
+
+                admissionNumber:
+                  admissionNumber,
+
+                loginEmail:
+                  parent1.email,
+
+                temporaryPassword:
+                  parent1.password,
+
+                status: "NEW",
+              });
+            }
+
+            /*
+             * PARENT 2 — OPTIONAL
+             */
+            if (
+              row.parent2Name
+            ) {
+              /*
+               * If Parent 2 has a name but
+               * no phone, allow the import.
+               *
+               * Parent 2 is optional.
+               */
+              const parent2 =
+                await createOrReuseParent(
+                  row.parent2Name,
+                  row.parent2Phone,
+                  row.parent2Email,
+                  row.parent2Relationship
+                );
+
+              if (
+                !parent2.existing
+              ) {
+                credentials.push({
+                  accountType:
+                    "PARENT",
+
+                  name:
+                    row.parent2Name,
+
+                  admissionNumber:
+                    admissionNumber,
+
+                  loginEmail:
+                    parent2.email,
+
+                  temporaryPassword:
+                    parent2.password,
+
+                  status: "NEW",
+                });
+              }
+            }
+          }
+        );
+
+        results.push({
+          rowNumber,
+          admissionNumber,
+          studentName,
+          status: "CREATED",
+          message:
+            `Student imported successfully into ${schoolClass.name}.`,
+        });
+      } catch (error) {
+        console.error(
+          `IMPORT ROW ${rowNumber} ERROR:`,
+          error
+        );
+
+        results.push({
+          rowNumber,
+          admissionNumber,
+          studentName,
+          status: "FAILED",
+          message:
+            "An unexpected error occurred while importing this student.",
+        });
+      }
+    }
+
+    const created =
+      results.filter(
+        (item) =>
+          item.status ===
+          "CREATED"
+      ).length;
+
+    const skipped =
+      results.filter(
+        (item) =>
+          item.status ===
+          "SKIPPED"
+      ).length;
+
+    const failed =
+      results.filter(
+        (item) =>
+          item.status ===
+          "FAILED"
+      ).length;
+
+    const credentialsCsv =
+      credentialsToCsv(
+        credentials
+      );
+
+    return NextResponse.json({
+      message:
+        "Student import completed.",
+
+      summary: {
+        totalRows: rows.length,
+        created,
+        skipped,
+        failed,
+        credentialsGenerated:
+          credentials.length,
+      },
+
+      results,
+
+      credentials,
+
+      credentialsCsv,
+    });
+  } catch (error) {
+    console.error(
+      "STUDENT IMPORT ERROR:",
+      error
+    );
+
+    return NextResponse.json(
+      {
+        error:
+          "Failed to process student import.",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+
+========== app\api\auth\login\route.ts ==========
+import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { prisma } from "@/lib/prisma";
+import {
+  createSession,
+  verifyPassword,
+  SESSION_COOKIE,
+} from "@/lib/auth";
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+
+    const email =
+      typeof body.email === "string"
+        ? body.email.trim().toLowerCase()
+        : "";
+
+    const password =
+      typeof body.password === "string"
+        ? body.password
+        : "";
+
+    if (!email || !password) {
+      return NextResponse.json(
+        {
+          error:
+            "Email and password are required.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const user =
+      await prisma.user.findUnique({
+        where: {
+          email,
+        },
+      });
+
+    if (!user) {
+      return NextResponse.json(
+        {
+          error:
+            "Invalid email or password.",
+        },
+        { status: 401 }
+      );
+    }
+
+    if (!user.active) {
+      return NextResponse.json(
+        {
+          error:
+            "This account is inactive.",
+        },
+        { status: 403 }
+      );
+    }
+
+    const passwordCorrect =
+      verifyPassword(
+        password,
+        user.passwordHash
+      );
+
+    if (!passwordCorrect) {
+      return NextResponse.json(
+        {
+          error:
+            "Invalid email or password.",
+        },
+        { status: 401 }
+      );
+    }
+
+    const session =
+      createSession({
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+        schoolId: user.schoolId,
+      });
+
+    const cookieStore =
+      await cookies();
+
+    cookieStore.set({
+      name: SESSION_COOKIE,
+      value: session,
+      httpOnly: true,
+      secure:
+        process.env.NODE_ENV ===
+        "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24,
+    });
+
+    return NextResponse.json({
+      success: true,
+      role: user.role,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName:
+          user.firstName,
+        lastName:
+          user.lastName,
+      },
+    });
+  } catch (error) {
+    console.error(
+      "LOGIN API ERROR:",
+      error
+    );
+
+    return NextResponse.json(
+      {
+        error:
+          "An unexpected server error occurred.",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+
+========== app\api\auth\logout\route.ts ==========
+import { NextResponse } from "next/server";
+import { SESSION_COOKIE } from "@/lib/auth";
+
+export async function POST() {
+  const response = NextResponse.json({
+    success: true,
+  });
+
+  response.cookies.set({
+    name: SESSION_COOKIE,
+    value: "",
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
+
+  return response;
+}
+
+
+========== app\api\auth\me\route.ts ==========
+import {
+  NextRequest,
+  NextResponse,
+} from "next/server";
+
+import { prisma } from "@/lib/prisma";
+import {
+  verifySession,
+  SESSION_COOKIE,
+} from "@/lib/auth";
+
+export async function GET(
+  request: NextRequest
+) {
+  try {
+    const token =
+      request.cookies.get(
+        SESSION_COOKIE
+      )?.value;
+
+    const session =
+      verifySession(token);
+
+    if (!session) {
+      return NextResponse.json(
+        {
+          authenticated: false,
+        },
+        { status: 401 }
+      );
+    }
+
+    const user =
+      await prisma.user.findFirst({
+        where: {
+          id: session.userId,
+          schoolId:
+            session.schoolId,
+          active: true,
+        },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          role: true,
+          schoolId: true,
+          active: true,
+        },
+      });
+
+    if (!user) {
+      return NextResponse.json(
+        {
+          authenticated: false,
+        },
+        { status: 401 }
+      );
+    }
+
+    return NextResponse.json({
+      authenticated: true,
+      user,
+    });
+  } catch (error) {
+    console.error(
+      "AUTH ME ERROR:",
+      error
+    );
+
+    return NextResponse.json(
+      {
+        authenticated: false,
+      },
+      { status: 401 }
+    );
+  }
+}
+
+
+========== app\api\admin\website\route.ts ==========
+import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
+import { cookies } from "next/headers";
+
+import { prisma } from "@/lib/prisma";
+import {
+  SESSION_COOKIE,
+  verifySession,
+} from "@/lib/auth";
+
+const PAGE_SLUGS = [
+  "home",
+  "about",
+  "academics",
+  "admissions",
+  "gallery",
+  "contact",
+];
+
+const DEFAULT_PAGES: Record<
+  string,
+  {
+    title: string;
+    subtitle: string;
+    content: Record<string, string>;
+  }
+> = {
+  home: {
+    title: "Welcome to Our School",
+    subtitle:
+      "Building bright futures through quality education.",
+    content: {
+      welcomeTitle: "Welcome to Our School",
+      welcomeText:
+        "We are committed to providing a safe, inspiring and supportive environment where every student can learn, grow and succeed.",
+      heroButtonText: "Apply Now",
+      heroButtonLink: "/admissions",
+      secondaryButtonText:
+        "Explore Our School",
+      secondaryButtonLink: "/about",
+      highlightsTitle:
+        "Why Choose Our School?",
+      highlightsText:
+        "Discover a learning environment designed to help students reach their full potential.",
+      highlight1Title:
+        "Quality Education",
+      highlight1Text:
+        "Dedicated teachers and a strong academic foundation.",
+      highlight2Title:
+        "Student Development",
+      highlight2Text:
+        "We develop confident, responsible and creative young people.",
+      highlight3Title:
+        "A Caring Community",
+      highlight3Text:
+        "Students, parents and teachers working together.",
+      galleryTitle:
+        "Moments From Our School",
+      galleryText:
+        "Take a look at some of the memories, facilities and achievements that make our school special.",
+      newsTitle:
+        "Latest From Our School",
+      newsText:
+        "Stay updated with our latest programs, activities and announcements.",
+      finalTitle:
+        "Ready to Join Our School?",
+      finalText:
+        "Learn more about admissions or get in touch with our school.",
+    },
+  },
+
+  about: {
+    title: "About Our School",
+    subtitle:
+      "Discover who we are and what we stand for.",
+    content: {
+      historyTitle: "Our History",
+      historyText:
+        "Tell the story of how your school started, its growth and its achievements.",
+      missionTitle: "Our Mission",
+      missionText:
+        "To provide quality education and develop students who are confident, responsible and prepared for the future.",
+      visionTitle: "Our Vision",
+      visionText:
+        "To become a leading institution committed to academic excellence, character development and innovation.",
+      founderTitle:
+        "A Word From Our Founder",
+      founderName: "School Founder",
+      founderMessage:
+        "Enter the founder's message to students, parents and the wider school community.",
+      founderImage: "",
+    },
+  },
+
+  academics: {
+    title: "Academics",
+    subtitle:
+      "Discover our academic programs and learning opportunities.",
+    content: {
+      introductionTitle:
+        "Academic Excellence",
+      introductionText:
+        "Our academic program is designed to challenge, support and inspire every student.",
+      subjectsTitle:
+        "Subjects We Offer",
+      subjectsText:
+        "Explore the subjects available to students at our school.",
+      academicHighlightsTitle:
+        "Our Academic Approach",
+      academicHighlightsText:
+        "Describe your teaching methods, academic standards, extracurricular learning and other academic information.",
+      admissionLinkText:
+        "Interested in joining us?",
+      admissionLinkButton:
+        "View Admissions",
+      admissionLinkUrl: "/admissions",
+      contactLinkText:
+        "Have questions?",
+      contactLinkButton: "Contact Us",
+      contactLinkUrl: "/contact",
+    },
+  },
+
+  admissions: {
+    title: "Admissions",
+    subtitle:
+      "Take the first step toward joining our school community.",
+    content: {
+      introductionTitle:
+        "Admissions Are Open",
+      introductionText:
+        "Provide parents and guardians with the information they need to apply to your school.",
+      requirementsTitle:
+        "Admission Requirements",
+      requirementsText:
+        "Enter the documents, age requirements, entrance examinations and other requirements for admission.",
+      processTitle: "How To Apply",
+      processText:
+        "Explain the steps parents should follow when applying to the school.",
+      importantDatesTitle:
+        "Important Dates",
+      importantDatesText:
+        "Add application opening dates, deadlines, interviews and other important dates.",
+      contactTitle:
+        "Need Help With Your Application?",
+      contactText:
+        "Our admissions team is available to answer your questions.",
+      contactButton:
+        "Contact Admissions",
+      contactUrl: "/contact",
+    },
+  },
+
+  gallery: {
+    title: "School Gallery",
+    subtitle:
+      "Memories, facilities and achievements.",
+    content: {
+      introductionTitle:
+        "Memories & Moments",
+      introductionText:
+        "Explore moments from school life, our facilities and the achievements of our students.",
+      facilitiesTitle:
+        "Our Facilities",
+      facilitiesText:
+        "Showcase classrooms, laboratories, library, sports facilities and other parts of the school.",
+      memoriesTitle:
+        "School Memories",
+      memoriesText:
+        "Share memorable events, excursions, celebrations and activities.",
+      achievementsTitle:
+        "Our Achievements",
+      achievementsText:
+        "Highlight academic, sporting, cultural and other achievements.",
+      administratorTitle:
+        "School Administration",
+      administratorName:
+        "School Administrator",
+      administratorRole:
+        "Administrator",
+      administratorMessage:
+        "Add a short message or introduction from the school administration.",
+      administratorImage: "",
+      socialTitle:
+        "Stay Connected",
+      socialText:
+        "Follow our school on social media for the latest updates.",
+    },
+  },
+
+  contact: {
+    title: "Contact Us",
+    subtitle:
+      "We would love to hear from you.",
+    content: {
+      introductionTitle:
+        "Get In Touch",
+      introductionText:
+        "Have a question, suggestion, complaint or enquiry? Send us a message and our team will get back to you.",
+      emailTitle: "Email",
+      email: "",
+      phoneTitle: "Phone",
+      phone: "",
+      whatsappTitle: "WhatsApp",
+      whatsapp: "",
+      smsTitle: "SMS",
+      sms: "",
+      addressTitle:
+        "School Address",
+      address: "",
+      formTitle:
+        "Send Us A Message",
+      formText:
+        "Use the form below to send an enquiry, suggestion or complaint to the school.",
+      enquiryEnabled: "true",
+      complaintsEnabled: "true",
+      suggestionsEnabled: "true",
+    },
+  },
+};
+
+async function getAdminSession() {
+  const cookieStore = await cookies();
+
+  const token =
+    cookieStore.get(SESSION_COOKIE)?.value;
+
+  const session = verifySession(token);
+
+  if (
+    !session ||
+    (session.role !== "ADMIN" &&
+      session.role !== "SUPER_ADMIN")
+  ) {
+    return null;
+  }
+
+  const user = await prisma.user.findFirst({
+    where: {
+      id: session.userId,
+      schoolId: session.schoolId,
+      active: true,
+      role: {
+        in: ["ADMIN", "SUPER_ADMIN"],
+      },
+    },
+    select: {
+      id: true,
+      schoolId: true,
+      role: true,
+    },
+  });
+
+  if (!user) {
+    return null;
+  }
+
+  return {
+    ...session,
+    schoolId: user.schoolId,
+    role: user.role,
+  };
+}
+
+export async function GET() {
+  try {
+    const session =
+      await getAdminSession();
+
+    if (!session) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const school =
+      await prisma.school.findUnique({
+        where: {
+          id: session.schoolId,
+        },
+      });
+
+    if (!school) {
+      return NextResponse.json(
+        { error: "School not found" },
+        { status: 404 }
+      );
+    }
+
+    /*
+     * Create default website pages the first time
+     * the website customizer is opened.
+     */
+    for (const slug of PAGE_SLUGS) {
+      const existingPage =
+        await prisma.websitePage.findUnique({
+          where: {
+            schoolId_slug: {
+              schoolId: school.id,
+              slug,
+            },
+          },
+        });
+
+      if (!existingPage) {
+        const defaults =
+          DEFAULT_PAGES[slug];
+
+        await prisma.websitePage.create({
+          data: {
+            schoolId: school.id,
+            slug,
+            title: defaults.title,
+            subtitle:
+              defaults.subtitle,
+            content:
+              defaults.content as Prisma.InputJsonValue,
+            enabled: true,
+          },
+        });
+      }
+    }
+
+    const pages =
+      await prisma.websitePage.findMany({
+        where: {
+          schoolId: school.id,
+        },
+        orderBy: {
+          createdAt: "asc",
+        },
+      });
+
+    return NextResponse.json({
+      school: {
+        id: school.id,
+        name: school.name,
+        logo: school.logo,
+        description:
+          school.description,
+        primaryColor:
+          school.primaryColor,
+        secondaryColor:
+          school.secondaryColor,
+        email: school.email,
+        phone: school.phone,
+        address: school.address,
+      },
+      pages,
+    });
+  } catch (error) {
+    console.error(
+      "Website GET error:",
+      error
+    );
+
+    return NextResponse.json(
+      {
+        error:
+          "Failed to load website settings",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(
+  request: NextRequest
+) {
+  try {
+    const session =
+      await getAdminSession();
+
+    if (!session) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const body =
+      await request.json();
+
+    const {
+      school,
+      pages,
+    }: {
+      school?: {
+        name?: string;
+        logo?: string | null;
+        description?: string | null;
+        primaryColor?: string | null;
+        secondaryColor?: string | null;
+        email?: string | null;
+        phone?: string | null;
+        address?: string | null;
+      };
+
+      pages?: Array<{
+        slug: string;
+        title: string;
+        subtitle?: string | null;
+        heroImage?: string | null;
+        content: Record<
+          string,
+          unknown
+        >;
+        enabled?: boolean;
+      }>;
+    } = body;
+
+    /*
+     * Update school branding/contact information.
+     */
+    if (school) {
+      await prisma.school.update({
+        where: {
+          id: session.schoolId,
+        },
+        data: {
+          name:
+            school.name?.trim() ||
+            undefined,
+
+          logo:
+            school.logo !==
+            undefined
+              ? school.logo || null
+              : undefined,
+
+          description:
+            school.description !==
+            undefined
+              ? school.description ||
+                null
+              : undefined,
+
+          primaryColor:
+            school.primaryColor !==
+            undefined
+              ? school.primaryColor ||
+                null
+              : undefined,
+
+          secondaryColor:
+            school.secondaryColor !==
+            undefined
+              ? school.secondaryColor ||
+                null
+              : undefined,
+
+          email:
+            school.email !==
+            undefined
+              ? school.email || null
+              : undefined,
+
+          phone:
+            school.phone !==
+            undefined
+              ? school.phone || null
+              : undefined,
+
+          address:
+            school.address !==
+            undefined
+              ? school.address ||
+                null
+              : undefined,
+        },
+      });
+    }
+
+    /*
+     * Update website pages.
+     */
+    if (Array.isArray(pages)) {
+      for (const page of pages) {
+        if (
+          !page.slug ||
+          !PAGE_SLUGS.includes(
+            page.slug
+          )
+        ) {
+          continue;
+        }
+
+        const jsonContent =
+          page.content as Prisma.InputJsonValue;
+
+        await prisma.websitePage.upsert({
+          where: {
+            schoolId_slug: {
+              schoolId:
+                session.schoolId,
+              slug: page.slug,
+            },
+          },
+
+          update: {
+            title:
+              page.title?.trim() ||
+              "",
+            subtitle:
+              page.subtitle?.trim() ||
+              null,
+            heroImage:
+              page.heroImage?.trim() ||
+              null,
+            content:
+              jsonContent,
+            enabled:
+              page.enabled !==
+              undefined
+                ? page.enabled
+                : true,
+          },
+
+          create: {
+            schoolId:
+              session.schoolId,
+            slug: page.slug,
+            title:
+              page.title?.trim() ||
+              "",
+            subtitle:
+              page.subtitle?.trim() ||
+              null,
+            heroImage:
+              page.heroImage?.trim() ||
+              null,
+            content:
+              jsonContent,
+            enabled:
+              page.enabled !==
+              undefined
+                ? page.enabled
+                : true,
+          },
+        });
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      message:
+        "Website settings saved successfully.",
+    });
+  } catch (error) {
+    console.error(
+      "Website PUT error:",
+      error
+    );
+
+    return NextResponse.json(
+      {
+        error:
+          "Failed to save website settings",
+      },
+      { status: 500 }
+    );
+  }
+}
+C:\Users\Dell\school-template\app\api\auth\login\route.ts
+C:\Users\Dell\school-template\app\api\auth\logout\route.ts
+C:\Users\Dell\school-template\app\api\auth\me\route.ts

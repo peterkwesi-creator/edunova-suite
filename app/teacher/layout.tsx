@@ -1,6 +1,8 @@
+
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import TeacherSidebar from "@/components/teacher/TeacherSidebar";
+import AccountHeader from "@/components/portal/AccountHeader";
 import { SESSION_COOKIE, verifySession } from "@/lib/auth";
 
 export default async function TeacherLayout({
@@ -10,7 +12,6 @@ export default async function TeacherLayout({
 }) {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
-
   const session = verifySession(token);
 
   if (!session || session.role !== "TEACHER") {
@@ -24,6 +25,7 @@ export default async function TeacherLayout({
 
         <main className="min-w-0 flex-1">
           <div className="p-4 md:p-6 lg:p-8">
+            <AccountHeader title="Teacher Portal" />
             {children}
           </div>
         </main>

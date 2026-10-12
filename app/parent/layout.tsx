@@ -1,6 +1,8 @@
+
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import ParentSidebar from "@/components/parent/ParentSidebar";
+import AccountHeader from "@/components/portal/AccountHeader";
 import { SESSION_COOKIE, verifySession } from "@/lib/auth";
 
 export default async function ParentLayout({
@@ -10,7 +12,6 @@ export default async function ParentLayout({
 }) {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
-
   const session = verifySession(token);
 
   if (!session || session.role !== "PARENT") {
@@ -24,6 +25,7 @@ export default async function ParentLayout({
 
         <main className="min-w-0 flex-1">
           <div className="p-4 md:p-6 lg:p-8">
+            <AccountHeader title="Parent Portal" />
             {children}
           </div>
         </main>

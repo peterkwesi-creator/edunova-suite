@@ -1,6 +1,8 @@
+
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import StudentSidebar from "@/components/student/StudentSidebar";
+import AccountHeader from "@/components/portal/AccountHeader";
 import { SESSION_COOKIE, verifySession } from "@/lib/auth";
 
 export default async function StudentLayout({
@@ -10,7 +12,6 @@ export default async function StudentLayout({
 }) {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
-
   const session = verifySession(token);
 
   if (!session || session.role !== "STUDENT") {
@@ -24,6 +25,7 @@ export default async function StudentLayout({
 
         <main className="min-w-0 flex-1">
           <div className="p-4 md:p-6 lg:p-8">
+            <AccountHeader title="Student Portal" />
             {children}
           </div>
         </main>

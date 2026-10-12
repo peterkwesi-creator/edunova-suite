@@ -1,11 +1,5 @@
-export default function Header() {
-  return (
-    <header className="bg-white shadow p-6 flex justify-between items-center">
-      <h2 className="text-2xl font-bold">Admin Dashboard</h2>
+import AccountHeader from "@/components/portal/AccountHeader";
 
-      <div className="font-semibold">
-        Welcome, Admin
-      </div>
-    </header>
-  );
+export default function Header() {
+  return <AccountHeader title="Admin Dashboard" />;
 }
