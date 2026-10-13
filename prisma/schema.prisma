@@ -8,94 +8,101 @@ datasource db {
 }
 
 model School {
-  id                String            @id @default(cuid())
-  name              String
-  slug              String            @unique
-  email             String?
-  phone             String?
-  address           String?
-  logo              String?
-  description       String?
-  primaryColor      String?
-  secondaryColor    String?
-  websiteEnabled    Boolean           @default(true)
-  admissionsEnabled Boolean           @default(true)
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  academicYears     AcademicYear[]
-  accountingEntries AccountingEntry[]
-  attendance        Attendance[]
-  contactMessages   ContactMessage[]
-  fees              Fee[]
-  galleryItems      GalleryItem[]
-  news              NewsItem[]
-  parents           Parent[]
-  reportCardInfos   ReportCardInfo[]
-  classes           SchoolClass[]
-  socialLinks       SocialLink[]
-  staffTasks        StaffTask[]
-  students          Student[]
-  studentNotes      StudentNote[]
-  subjects          Subject[]
-  teachers          Teacher[]
-  timetableEntries  TimetableEntry[]
-  users             User[]
-  websitePages      WebsitePage[]
+  id                  String               @id @default(cuid())
+  name                String
+  slug                String               @unique
+  email               String?
+  phone               String?
+  address             String?
+  logo                String?
+  description         String?
+  primaryColor        String?
+  secondaryColor      String?
+  websiteEnabled      Boolean              @default(true)
+  admissionsEnabled   Boolean              @default(true)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  academicYears       AcademicYear[]
+  accountingEntries   AccountingEntry[]
+  attendance          Attendance[]
+  contactMessages     ContactMessage[]
+  fees                Fee[]
+  galleryItems        GalleryItem[]
+  news                NewsItem[]
+  parents             Parent[]
+  reportCardInfos     ReportCardInfo[]
+  classes             SchoolClass[]
+  socialLinks         SocialLink[]
+  staffTasks          StaffTask[]
+  students            Student[]
+  studentNotes        StudentNote[]
+  subjects            Subject[]
+  teachers            Teacher[]
+  timetableEntries    TimetableEntry[]
+  users               User[]
+  websitePages        WebsitePage[]
+  chatMessages        ClassChatMessage[]
+  paymentTransactions PaymentTransaction[]
 }
 
 model User {
-  id           String        @id @default(cuid())
-  email        String        @unique
-  passwordHash String
-  firstName    String
-  lastName     String
-  role         UserRole      @default(STUDENT)
-  schoolId     String
-  active       Boolean       @default(true)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  parentId     String?       @unique
-  studentId    String?       @unique
-  teacherId    String?       @unique
-  staffTasks   StaffTask[]
-  studentNotes StudentNote[]
-  parent       Parent?       @relation(fields: [parentId], references: [id])
-  school       School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  student      Student?      @relation(fields: [studentId], references: [id])
-  teacher      Teacher?      @relation(fields: [teacherId], references: [id])
+  id                  String               @id @default(cuid())
+  email               String               @unique
+  passwordHash        String
+  firstName           String
+  lastName            String
+  role                UserRole             @default(STUDENT)
+  schoolId            String
+  active              Boolean              @default(true)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  parentId            String?              @unique
+  studentId           String?              @unique
+  teacherId           String?              @unique
+  staffTasks          StaffTask[]
+  studentNotes        StudentNote[]
+  sentChatMessages    ClassChatMessage[]
+  paymentTransactions PaymentTransaction[]
+
+  parent  Parent?  @relation(fields: [parentId], references: [id])
+  school  School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student Student? @relation(fields: [studentId], references: [id])
+  teacher Teacher? @relation(fields: [teacherId], references: [id])
 
   @@index([schoolId])
   @@index([role])
 }
 
 model Student {
-  id              String           @id @default(cuid())
-  studentNumber   String           @unique
-  firstName       String
-  lastName        String
-  gender          String
-  dateOfBirth     DateTime?
-  phone           String?
-  email           String?
-  address         String?
-  guardianName    String?
-  guardianPhone   String?
-  classId         String?
-  schoolId        String
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  photoUrl        String?
-  attendance      Attendance[]
-  fees            Fee[]
-  wards           ParentStudent[]
-  payments        Payment[]
-  reportCardInfos ReportCardInfo[]
-  results         Result[]
-  class           SchoolClass?     @relation(fields: [classId], references: [id])
-  school          School           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  notes           StudentNote[]
-  submissions     Submission[]
-  user            User?
+  id                  String               @id @default(cuid())
+  studentNumber       String               @unique
+  firstName           String
+  lastName            String
+  gender              String
+  dateOfBirth         DateTime?
+  phone               String?
+  email               String?
+  address             String?
+  guardianName        String?
+  guardianPhone       String?
+  classId             String?
+  schoolId            String
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  photoUrl            String?
+  attendance          Attendance[]
+  fees                Fee[]
+  wards               ParentStudent[]
+  payments            Payment[]
+  reportCardInfos     ReportCardInfo[]
+  results             Result[]
+  class               SchoolClass?         @relation(fields: [classId], references: [id])
+  school              School               @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  notes               StudentNote[]
+  submissions         Submission[]
+  paymentTransactions PaymentTransaction[]
+
+  user User?
 
   @@index([schoolId])
   @@index([classId])
@@ -161,20 +168,21 @@ model ParentStudent {
 }
 
 model SchoolClass {
-  id               String           @id @default(cuid())
+  id               String             @id @default(cuid())
   name             String
   description      String?
   schoolId         String
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
   assignments      Assignment[]
   attendance       Attendance[]
   subjects         ClassSubject[]
   fees             Fee[]
   results          Result[]
-  school           School           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  school           School             @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   students         Student[]
   timetableEntries TimetableEntry[]
+  chatMessages     ClassChatMessage[]
 
   @@unique([schoolId, name])
 }
@@ -301,23 +309,24 @@ model SocialLink {
 }
 
 model Fee {
-  id           String       @id @default(cuid())
-  title        String
-  description  String?
-  amount       Float
-  academicYear String
-  term         String
-  studentId    String
-  schoolId     String
-  classId      String?
-  dueDate      DateTime?
-  status       String       @default("UNPAID")
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  class        SchoolClass? @relation(fields: [classId], references: [id])
-  school       School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  student      Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  payments     Payment[]
+  id                  String               @id @default(cuid())
+  title               String
+  description         String?
+  amount              Float
+  academicYear        String
+  term                String
+  studentId           String
+  schoolId            String
+  classId             String?
+  dueDate             DateTime?
+  status              String               @default("UNPAID")
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  class               SchoolClass?         @relation(fields: [classId], references: [id])
+  school              School               @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student             Student              @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  payments            Payment[]
+  paymentTransactions PaymentTransaction[]
 
   @@index([studentId])
   @@index([schoolId])
@@ -580,7 +589,53 @@ model AccountingEntry {
 enum UserRole {
   SUPER_ADMIN
   ADMIN
+  ACCOUNTANT
+  SECRETARY
   TEACHER
   STUDENT
   PARENT
+}
+
+model ClassChatMessage {
+  id        String   @id @default(cuid())
+  schoolId  String
+  classId   String
+  senderId  String
+  content   String   @db.VarChar(2000)
+  createdAt DateTime @default(now())
+
+  school School      @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  class  SchoolClass @relation(fields: [classId], references: [id], onDelete: Cascade)
+  sender User        @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId, classId, createdAt])
+  @@index([senderId])
+}
+
+model PaymentTransaction {
+  id                String    @id @default(cuid())
+  schoolId          String
+  feeId             String
+  studentId         String
+  initiatedByUserId String
+  provider          String    @default("PAYSTACK")
+  providerReference String    @unique
+  amount            Float
+  currency          String    @default("GHS")
+  method            String
+  status            String    @default("PENDING")
+  receiptNumber     String?   @unique
+  paidAt            DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  school      School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  fee         Fee     @relation(fields: [feeId], references: [id], onDelete: Cascade)
+  student     Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  initiatedBy User    @relation(fields: [initiatedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([schoolId, status])
+  @@index([feeId, status])
+  @@index([studentId])
+  @@index([initiatedByUserId])
 }
